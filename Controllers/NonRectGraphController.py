@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import skrf as rf  # Smith chart plotting
+import pyqtgraph as pg  # Dynamic plotting
 
 
 class SmithChartWidget(QWidget):
@@ -11,21 +12,42 @@ class SmithChartWidget(QWidget):
         super().__init__(parent)
 
         layout = QVBoxLayout()
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
+        self.graph_widget = pg.PlotWidget()
+        layout.addWidget(self.graph_widget)
         self.setLayout(layout)
 
-        self.plot_smith_chart()
+        # Load the S1P file
+        self.network = rf.Network('example.s1p')
+        self.s11 = self.network.s[:, 0, 0]  # Extract S11 parameter
 
-    def plot_smith_chart(self):
-        ax = self.figure.add_subplot(111)
+        # Set up the graph: limit the axis ranges, labels, etc.
+        self.graph_widget.setXRange(-1.5, 1.5)
+        self.graph_widget.setYRange(-1.5, 1.5)
+        self.graph_widget.setTitle("Dynamic Smith Chart")
+        self.graph_widget.setLabel('left', 'Imaginary')
+        self.graph_widget.setLabel('bottom', 'Real')
 
-        # Generate an example network for plotting (50 ohms reference impedance)
-        network = rf.Network('example.s1p')  # You can load your own S-parameters here
-        network.plot_s_smith(ax=ax)
+        # Prepare for dynamic plotting
+        self.ptr = 0  # Pointer to the current point
+        pen = pg.mkPen(color='r', width=2, style=pg.QtCore.Qt.DashLine)
+        self.plot_data = self.graph_widget.plot([], [], pen=pen, symbol='o', symbolBrush='b')
 
-        self.canvas.draw()
+        # Start a timer to update the graph dynamically
+        self.timer = pg.QtCore.QTimer()
+        self.timer.timeout.connect(self.update_plot)
+        self.timer.start(200)  # Update every 200 ms
+
+    def update_plot(self):
+        """Update the graph by adding one point at a time."""
+        if self.ptr < len(self.s11):
+            real_part = np.real(self.s11[:self.ptr + 1])
+            imag_part = np.imag(self.s11[:self.ptr + 1])
+
+            # Update the plot data
+            self.plot_data.setData(real_part, imag_part)
+            self.ptr += 1
+        else:
+            self.timer.stop()  # Stop the timer once all points are plotted
 
 
 class PhasePortraitWidget(QWidget):
@@ -121,43 +143,41 @@ class PolarGraphWidget(QWidget):
 
 
 # create class for spiral graph
-class SpiralGraphWidget(QWidget):
+class DynamicSpiralGraph(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Create the layout
         layout = QVBoxLayout()
-
-        # Create a figure
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-
-        # Add the canvas to the layout
-        layout.addWidget(self.canvas)
-
-        # Set the layout for the widget
+        self.graph_widget = pg.PlotWidget()
+        layout.addWidget(self.graph_widget)
         self.setLayout(layout)
 
-        # Call the method to plot the polar graph
-        self.plot_spiral()
+        # Generate spiral data
+        self.theta = np.linspace(0, 10 * np.pi, 1000)  # Angle from 0 to 10π
+        self.r = np.linspace(0, 10, 1000)  # Radius increasing from 0 to 10
 
-    def plot_spiral(self):
-        # Create a polar subplot
-        ax = self.figure.add_subplot(111, projection='polar')
+        # Convert polar to Cartesian coordinates
+        self.x = self.r * np.cos(self.theta)
+        self.y = self.r * np.sin(self.theta)
 
-        # Generate data for the polar plot
-        theta = np.linspace(0, 10 * np.pi, 1000)
-        r = theta
+        # Initialize plot
+        self.spiral_data = self.graph_widget.plot([], [], pen=pg.mkPen('b', width=2))
 
-        # Plot the data
-        ax.plot(theta, r)
+        # Counter for dynamic drawing
+        self.ptr = 0
 
-        # Set title
-        ax.set_title('Spiral Graph Example in PyQt5', va='bottom')
+        # Set up timer for dynamic updates
+        self.timer = pg.QtCore.QTimer()
+        self.timer.timeout.connect(self.update_plot)
+        self.timer.start(50)  # Update every 50 ms
 
-        # Redraw the canvas to display the plot
-        self.canvas.draw()
-
+    def update_plot(self):
+        """Update the graph by adding one point at a time."""
+        if self.ptr < len(self.x):
+            self.spiral_data.setData(self.x[:self.ptr], self.y[:self.ptr])
+            self.ptr += 10  # Increment the pointer to gradually draw the spiral
+        else:
+            self.timer.stop()  # Stop the timer when the plot is fully drawn
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -175,7 +195,7 @@ class MainWindow(QMainWindow):
 
         ################# Spiral Graph #################
         # # Create the spiral widget
-        # spiral_widget = SpiralGraphWidget(self)
+        # spiral_widget = DynamicSpiralGraph(self)
         #
         # # Set the central widget
         # self.setCentralWidget(spiral_widget)
@@ -194,24 +214,24 @@ class MainWindow(QMainWindow):
         # self.setWindowTitle("Smith Chart in PyQt5")
 
         ################# Phase Portrait #################
-        # # Create the phase portrait widget
-        # phase_portrait_widget = PhasePortraitWidget(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(phase_portrait_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Phase Portrait in PyQt5")
-
-        ################# Radar Display #################
-        # Create the radar display widget
-        radar_display_widget = RadarDisplayWidget(self)
+        # Create the phase portrait widget
+        phase_portrait_widget = PhasePortraitWidget(self)
 
         # Set the central widget
-        self.setCentralWidget(radar_display_widget)
+        self.setCentralWidget(phase_portrait_widget)
 
         # Set the window title
-        self.setWindowTitle("Radar Display in PyQt5")
+        self.setWindowTitle("Phase Portrait in PyQt5")
+
+        ################# Radar Display #################
+        # # Create the radar display widget
+        # radar_display_widget = RadarDisplayWidget(self)
+        #
+        # # Set the central widget
+        # self.setCentralWidget(radar_display_widget)
+        #
+        # # Set the window title
+        # self.setWindowTitle("Radar Display in PyQt5")
 
 
 if __name__ == "__main__":
