@@ -5,8 +5,10 @@ from PySide6.QtCharts import QChart, QChartView, QLineSeries
 import numpy as np
 import sys
 import csv
+import os
   
-import GUI              
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))              
+from Controllers.GraphController import Graph
 
 class MainWindow(QMainWindow):
     def __init__(self,name:str):
