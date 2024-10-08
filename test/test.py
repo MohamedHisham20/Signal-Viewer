@@ -22,6 +22,12 @@ def main():
     app = QApplication([])
     window = MainWindow("test window")
     window.show()
+    file_path = r".C:\Users\moham\OneDrive\Desktop\Boda\CUFE\SBE 3\Projects\DSP\Signal_Viewer\Signal-Viewer\signal.csv"
+    try:
+        window.graph.draw_signal(file_path)
+        print("Signal drawn successfully.")
+    except Exception as e:
+        print(f"Error drawing signal: {e}")
     sys.exit(app.exec())
 
       

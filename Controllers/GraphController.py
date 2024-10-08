@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow ,QWidget, QLabel, QVBoxLayout,
 QHBoxLayout, QPushButton ,QScrollBar)
-from PySide6.QtCore import Qt 
+from PySide6.QtCore import Qt, QPointF 
 from PySide6.QtCharts import QChart, QChartView, QLineSeries
 import numpy as np
 import sys
@@ -36,7 +36,11 @@ class Graph(QWidget):
         
         #this method shall execute all code needed to construct the graph layout
         GraphController.construct_graph(self)
+
+    def draw_signal(self,file_path):
+        GraphController.draw_signal(self,file_path)
         
+            
 class GraphController:
     @staticmethod
     def construct_graph(graph:Graph):
@@ -53,21 +57,25 @@ class GraphController:
         graph.graph_controls_layout.addWidget(graph.reset_btn)
         graph.graph_controls_layout.addWidget(graph.delete_btn)
         
-        graph._layout_.addWidget(graph.chart_view)
+        graph._layout_.addWidget(graph.chart_view)        
+        graph._layout_.addWidget(graph.horizontal_scroll_bar)
+
+    @staticmethod
+    def draw_signal(graph:Graph,file_path:str):
+        try:
+            with open(file_path, mode='r') as file:
+                reader = csv.reader(file)
+                next(reader)  # Skip header
+                for row in reader:
+                    x, y = float(row[0]), float(row[1])
+                    pnt = QPointF(x,y)
+                    graph.series.append(pnt)
+        except Exception as e:
+            print(f"An error occurred while reading the file: {e}")
+            
         graph.chart.addSeries(graph.series)
         graph.chart.createDefaultAxes()
         
-        graph._layout_.addWidget(graph.horizontal_scroll_bar)
- 
-    @staticmethod            
-    def update_graph_name(graph:Graph, new_name:str):
-        graph.name_label.setText(new_name) 
-        
-    @staticmethod    
-    def reset_graph(graph:Graph):
-        pass
-    
-    @staticmethod
-    def delete_graph(graph:Graph):
-        pass              
+    def pan_chart(graph):
+        pass        
         
