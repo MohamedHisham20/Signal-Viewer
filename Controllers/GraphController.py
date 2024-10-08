@@ -5,21 +5,7 @@ from PyQt5.QtGui import QPainter
 from PySide6 import QtCharts
 import numpy as np
 
-class Graph(QWidget):
-    def __init__(self, name = "graph1"):
-        """ Construct a Graph with name if given """
-        super().__init__()
-        
-        #member variables initialization
-        self.name_label = QLabel(name,self)
-        self.change_name_btn = QPushButton("change name",self)
-        self.reset_btn = QPushButton("reset",self)
-        self.delete_btn = QPushButton("delete Graph",self)
-        self.chart = QtCharts.QChart()
-        self.chart_view = QtCharts.QChartView(self.chart,self)
-        self.series = QtCharts.QLineSeries()
-        
-        GraphController.construct_chart(self)
+from ..test.test import Graph
         
 class GraphController:
     @staticmethod
