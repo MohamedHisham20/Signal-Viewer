@@ -1,10 +1,7 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow ,QWidget, QLabel, QVBoxLayout,
 QHBoxLayout, QPushButton ,QScrollBar)
-from PySide6.QtCore import Qt, QPointF 
+from PySide6.QtCore import Qt, QTimer 
 from PySide6.QtCharts import QChart, QChartView, QLineSeries
-import numpy as np
-
-
 
 class Graph(QWidget):
     def __init__(self, name = "graph1"):
@@ -24,10 +21,12 @@ class Graph(QWidget):
         self.reset_btn = QPushButton("reset",self)
         self.delete_btn = QPushButton("delete Graph",self)
         
-        #Child 2 of Graph Widget
         self.chart = QChart()
         self.chart_view = QChartView(self.chart,self)
         self.series = QLineSeries()
+        self.data_pnts = []
         
-        #child 3 of Graph Widget
+        self.timer = QTimer()
+        self.signal_curr_indx = 0
+        
         self.horizontal_scroll_bar = QScrollBar(Qt.Orientation.Horizontal,self)
