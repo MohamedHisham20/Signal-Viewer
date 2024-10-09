@@ -1,7 +1,52 @@
 import numpy as np
 from scipy import interpolate
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from GUI.glueWindow import glueWindow
 class GlueController:
+    def __init__(self):
+        self.signals = [np.linspace(0,1,100),np.linspace(0,1,100)]
+        self.signal1=self.signals[0]
+        self.signal2=self.signals[1]
+        self.order=1
+        self.overlap=0
+        self.signal1_start=0
+        self.signal2_start=0
+        self.signal1_size=100
+        self.signal2_size=100
+    def setdefaults(self,window : glueWindow):
+        window.comboBox_signal1.addItems(["signal1","signal2"])
+        window.comboBox_signal2.addItems(["signal1","signal2"])
+        window.spinBox_order.setValue(1)
+        window.spinBox_overlap.setValue(0)
+        window.spinBox_start1.setValue(0)
+        window.spinBox_start2.setValue(0)
+        window.spinBox_size1.setValue(100)
+        window.spinBox_size2.setValue(100)
+    
+    def ComboBox_signal1(self,window : glueWindow):
+        self.signal1 = self.signals[window.comboBox_signal1.currentIndex()]
+    def ComboBox_signal2(self,window : glueWindow):
+        self.signal2 = self.signals[window.comboBox_signal2.currentIndex()]
+    def SpinBox_start1(self,window : glueWindow):
+        self.signal1_start = window.spinBox_start1.value()
+    def SpinBox_start2(self,window : glueWindow):
+        self.signal2_start = window.spinBox_start2.value()
+    def SpinBox_size1(self,window : glueWindow):
+        self.signal1_size = window.spinBox_size1.value()
+    def SpinBox_size2(self,window : glueWindow):
+        self.signal2_size = window.spinBox_size2.value()
+    def SpinBox_overlap(self,window : glueWindow):
+        self.overlap = window.spinBox_overlap.value()
+    def SpinBox_order(self,window : glueWindow):
+        self.order = window.spinBox_order.value()
+    def is_make_report(self,window : glueWindow):
+        if window.checkBox.isChecked():
+            return True
+        return False
 
+        
     def InterPolate_signals(self,
     signal1,
     signal2,
@@ -29,9 +74,3 @@ class GlueController:
         concatenated_signal = np.concatenate((signal1,signal_glued,signal2))
 
         return concatenated_signal
-
-        
-
-        
-
-        
