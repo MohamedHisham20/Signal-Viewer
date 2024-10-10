@@ -1,29 +1,59 @@
-from PySide6.QtWidgets import (QApplication, QMainWindow ,QWidget, QLabel, QVBoxLayout,
-QHBoxLayout, QPushButton ,QScrollBar)
-from PySide6.QtCore import Qt, QPointF, QTimer 
-from PySide6.QtCharts import QChart, QChartView, QLineSeries
-import numpy as np
+from PySide6.QtWidgets import (QFileDialog)
+from PySide6.QtCore import QPointF, QMetaMethod 
 import sys
 import csv
 import os
+from functools import partial
 
 
 from GUI.Graph import Graph
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))              
 
                        
-class GraphController:        
+class GraphController:
+    """Methods marked with double underscore (__) as a prefix
+    are of internal behaviour and should not be accessed by other developers
+    outside this class.\n\n
+    Hover over a function name for info
+    """        
     @staticmethod
-    def connect_graph_btns_signals(graph:Graph):
-        graph.speed_up_btn.clicked.connect(GraphController.increase_plotting_speed)
-        graph.speed_down_btn.clicked.connect(GraphController.decrease_plotting_speed)
+    def connect_btns_actions(graph:Graph):
+        graph.upload_btn.clicked.connect(lambda:GraphController.upload_signal_file(graph))
+        graph.play_pause_btn.clicked.connect(lambda:GraphController.toggle_play_pause_btn(graph))
+        
+    @staticmethod
+    def upload_signal_file(graph:Graph):
+        """loads a csv file\n
+        connected with upload button"""        
+        file_path, _ = QFileDialog.getOpenFileName(None, "Open Signal File", "", "CSV Files (*.csv);;All Files (*)")
+        
+        if file_path in graph.uploaded_files:
+            print("File already exists")
+            return
+        
+        if file_path:
+            graph.uploaded_files.append(file_path)
+            graph.active_file = file_path
+            GraphController.load_signal(graph, file_path)
+        else: print("Error in uploading file")    
+    
+    
+    @staticmethod
+    def delete_file(graph:Graph,file_path:str):
+        """connected with delete button"""
+        if not file_path in graph.uploaded_files:
+            print("File does not exist already")
+            return
+        graph.uploaded_files.remove(file_path)
     
     
     @staticmethod
     def load_signal(graph:Graph,file_path:str):
-        """Load the signal data points into graph\n
-        a necessary step before static or real time plotting
+        """Loads the signal data points into graph\n
         """
+        if GraphController.is_graph_loaded(graph):
+            GraphController.unload_signal(graph)
+         
         try:
             with open(file_path, mode='r') as file:
                 reader = csv.reader(file)
@@ -32,41 +62,101 @@ class GraphController:
                     x, y = float(row[0]), float(row[1])
                     pnt = QPointF(x,y)
                     graph.data_pnts.append(pnt)
-                print("Signal loaded successfully")    
+                graph.is_loaded =True    
         except Exception as e:
             print(f"An error occurred while reading the file: {e}")
-
+        
+        GraphController.__play_loaded_signal(graph)
+        graph.signal_is_running = True    
+            
+    @staticmethod        
+    def unload_signal(graph:Graph):
+        """clears the graph from the previous loaded signal\n
+        but does not delete the signal file\n
+        connected with reset button"""
+        graph.series.clear()
+        graph.is_loaded = False
     
-    @staticmethod   
-    def draw_signal_static(graph:Graph, file_path:str):
-        GraphController.load_signal(graph,file_path)
-        graph.series.append(graph.data_pnts)
-        graph.chart.addSeries(graph.series)
-        graph.chart.createDefaultAxes()        
+        
+    @staticmethod
+    def is_graph_loaded(graph:Graph):
+        """checks if a graph has been loaded with a signal"""
+        return graph.is_loaded
+    
+    
+    staticmethod
+    def get_loaded_files(graph:Graph):
+        """returns a list of all csv files uploaded by the user"""
+        return graph.uploaded_files
     
     
     @staticmethod
-    def draw_signal_realtime(graph:Graph, file_path:str, interval:int =100):
-        """The interval controls the plotting speed.\n
-        smaller intervals correspond to faster plotting
+    def get_active_file(graph:Graph):
+        """returns the file path of the current active file"""
+        return graph.active_file
+    
+    
+    @staticmethod
+    def toggle_play_pause_btn(graph:Graph):
+        """Cotrols playing and pausing\n
+        connected to play and pause button"""
+        if not graph.is_loaded: return
+            
+        if graph.timer.isActive():
+            graph.timer.stop()
+            graph.play_pause_btn.setText("play")
+            graph.signal_is_running = False
+        else:
+            graph.timer.start(graph.timer.interval())
+            graph.play_pause_btn.setText("pause")
+            graph.signal_is_running = True     
+
+    @staticmethod
+    def replay_signal(graph:Graph,interval:int=5):
+        """connected with replay button"""
+        if not GraphController.is_graph_loaded(graph):
+            print("Load a signal first")
+            return
+        
+        GraphController.__play_loaded_signal(graph)
+
+ 
+    @staticmethod
+    def increase_plotting_speed(graph:Graph):
+        """connected with + button"""
+        GraphController.__control_speed(graph,graph.delta_speed)
+    
+    
+    @staticmethod
+    def decrease_plotting_speed(graph:Graph):
+        """connected with - button"""
+        GraphController.__control_speed(graph, -(graph.delta_speed)) 
+    
+
+    @staticmethod
+    def __play_loaded_signal(graph:Graph,interval:int =5):
+        """plots the signal of the active file\n
+        The interval controls the plotting speed.\n
+        smaller intervals correspond to faster plotting\n
         """
-        GraphController.load_signal(graph,file_path)
-        graph.series.clear()
+        if not GraphController.is_graph_loaded(graph):
+            print("Load a signal first")
+            return  
         graph.chart.addSeries(graph.series)
         graph.signal_curr_indx=0
         
         graph.chart.setAxisX(graph.x_axis, graph.series)
         graph.chart.setAxisY(graph.y_axis, graph.series)
         
-        GraphController.set_full_view_port(graph)
+        GraphController.__set_full_view_port(graph)
                 
-        graph.timer.timeout.connect(lambda: GraphController.animate_signal(graph))
+        graph.timer.timeout.connect(lambda: GraphController.__animate_signal(graph))
         graph.timer.start(interval)
-        GraphController.animate_signal(graph)
-        
+        GraphController.__animate_signal(graph)
+
     
     @staticmethod
-    def animate_signal(graph:Graph):
+    def __animate_signal(graph:Graph):
         if graph.signal_curr_indx < len(graph.data_pnts):
             graph.series.append(graph.data_pnts[graph.signal_curr_indx])
             graph.signal_curr_indx += 1
@@ -75,7 +165,7 @@ class GraphController:
     
     
     @staticmethod
-    def set_full_view_port(graph: Graph):
+    def __set_full_view_port(graph: Graph):
         """Sets the view port to fit the whole signal in real time\n
         No need for the user to pan the signal.
         """
@@ -92,22 +182,15 @@ class GraphController:
         graph.chart.axisX().setRange(x_min, x_max)
         graph.chart.axisY().setRange(y_min, y_max)
         
-        
+            
     @staticmethod
-    def increase_plotting_speed(graph:Graph):
-        GraphController.control_speed(graph,graph.delta_speed)
-    
-    
-    @staticmethod
-    def decrease_plotting_speed(graph:Graph):
-        GraphController.control_speed(graph, -(graph.delta_speed))
-    
-    
-    @staticmethod
-    def control_speed(graph:Graph, delta_speed:int):
+    def __control_speed(graph:Graph, delta_speed:int):
         current_interval = graph.timer.interval()
         if delta_speed > 0 : 
             new_interval = max(graph.min_plotting_interval, current_interval+delta_speed)
         else : new_interval = min(graph.max_plotting_interval, current_interval+delta_speed)
         graph.timer.setInterval(new_interval)
+        
+        
+
         
