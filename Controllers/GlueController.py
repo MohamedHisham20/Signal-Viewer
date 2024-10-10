@@ -7,6 +7,8 @@ import requests
 from io import StringIO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from GUI.glueWindow import glueWindow
+from GUI.Graph import Graph
+from PySide6.QtCore import QPointF 
 class GlueController:
     def __init__(self):
         self.signals = [np.linspace(0,1,100),np.linspace(0,1,100)]
@@ -59,6 +61,24 @@ class GlueController:
             return data
         else:
             raise Exception(f"Failed to fetch data: {response.status_code}")
+        
+    @staticmethod
+    def process_signal_data(data):
+        # Create 5 graphs
+        graphs = [Graph() for _ in range(5)]
+        
+        # Iterate through rows and assign values to graphs
+        for idx, row in enumerate(data):
+            # Row format is like {'timestamp': ..., 'open': ..., 'high': ..., 'low': ..., 'close': ..., 'volume': ...}
+            x = idx  # use the index of the row as x
+            
+            # Iterate through 5 columns (ignoring timestamp) and add points to each graph
+            for i, key in enumerate(['open', 'high', 'low', 'close', 'volume']):
+                y = float(row[key])  # Convert the column value to float
+                pnt = QPointF(x, y)
+                graphs[i].data_pnts.append(pnt)  # Append the point to the corresponding graph
+        
+        return graphs
 
     def InterPolate_signals(self,
     signal1,
