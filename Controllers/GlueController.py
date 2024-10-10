@@ -2,6 +2,9 @@ import numpy as np
 from scipy import interpolate
 import sys
 import os
+import csv
+import requests
+from io import StringIO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from GUI.glueWindow import glueWindow
 class GlueController:
@@ -45,8 +48,18 @@ class GlueController:
         if window.checkBox.isChecked():
             return True
         return False
+    @staticmethod
+    def real_time_signal():
+        url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo&datatype=csv"
+        response = requests.get(url)    
+        if response.status_code == 200:
+            csv_content = response.content.decode('utf-8')
+            csv_reader = csv.DictReader(StringIO(csv_content))
+            data = [row for row in csv_reader]        
+            return data
+        else:
+            raise Exception(f"Failed to fetch data: {response.status_code}")
 
-        
     def InterPolate_signals(self,
     signal1,
     signal2,
