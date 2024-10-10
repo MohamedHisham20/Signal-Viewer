@@ -64,20 +64,13 @@ class GlueController:
         
     @staticmethod
     def process_signal_data(data):
-        # Create 5 graphs
         graphs = [Graph() for _ in range(5)]
-        
-        # Iterate through rows and assign values to graphs
         for idx, row in enumerate(data):
-            # Row format is like {'timestamp': ..., 'open': ..., 'high': ..., 'low': ..., 'close': ..., 'volume': ...}
-            x = idx  # use the index of the row as x
-            
-            # Iterate through 5 columns (ignoring timestamp) and add points to each graph
+            x = idx 
             for i, key in enumerate(['open', 'high', 'low', 'close', 'volume']):
-                y = float(row[key])  # Convert the column value to float
+                y = float(row[key])  
                 pnt = QPointF(x, y)
-                graphs[i].data_pnts.append(pnt)  # Append the point to the corresponding graph
-        
+                graphs[i].data_pnts.append(pnt)  
         return graphs
 
     def InterPolate_signals(self,
