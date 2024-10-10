@@ -30,10 +30,9 @@ class Graph(QWidget):
         self.series = QLineSeries()
         self.data_pnts = []
         self.timer = QTimer()
-        self.signal_curr_indx = 0
-        self.delta_speed = 5 #default change in speed
-        self.min_plotting_interval = 10 #fastest plotting speed
-        self.max_plotting_interval = 50   #slowest plotting speed
+        self.delta_interval = 2 #default change in timer interval
+        self.min_plotting_interval = 5 # corresponds to fastest plotting
+        self.max_plotting_interval = 50 # corresponds to slowest plotting
         self.horizontal_scroll_bar = QScrollBar(Qt.Orientation.Horizontal,self)
         
         #container for signal controls
@@ -50,10 +49,12 @@ class Graph(QWidget):
         self.speed_down_btn = QPushButton("-speed",self)
         
         #Graph status
-        self.signal_is_running = False
+        self.signal_plotting_started  = False
         self.is_loaded = False
         self.uploaded_files = []
         self.active_file = ""
+        self.signal_curr_indx = 0
+        self.empty = True
         
         #Layout setup
         self.graph_controls_layout.addWidget(self.name_field)
