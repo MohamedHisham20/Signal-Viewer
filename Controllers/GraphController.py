@@ -24,6 +24,8 @@ class GraphController:
         graph.replay_btn.clicked.connect(lambda:GraphController.replay_signal(graph))
         graph.speed_up_btn.clicked.connect(lambda:GraphController.increase_plotting_speed(graph))
         graph.speed_down_btn.clicked.connect(lambda:GraphController.decrease_plotting_speed(graph))
+        graph.zoom_in_btn.clicked.connect(lambda:GraphController.zoom_in(graph))
+        graph.zoom_out_btn.clicked.connect(lambda:GraphController.zoom_out(graph))
         
     @staticmethod
     def upload_signal_file(graph:Graph):
@@ -180,6 +182,16 @@ class GraphController:
         GraphController.__control_speed(graph, graph.delta_interval) 
     
 
+    @staticmethod
+    def zoom_in(graph:Graph):
+        graph.chart_view.chart().zoomIn()
+    
+    
+    @staticmethod
+    def zoom_out(graph:Graph):
+        graph.chart_view.chart().zoomOut()
+    
+    
     @staticmethod
     def __play_loaded_signal(graph:Graph,interval:int =20):
         """plots the signal of the active file\n

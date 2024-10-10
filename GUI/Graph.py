@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout,
+from PySide6.QtWidgets import (QWidget, QRubberBand, QVBoxLayout,
 QHBoxLayout, QPushButton ,QScrollBar, QLineEdit)
-from PySide6.QtCore import Qt, QTimer 
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
 
 
@@ -25,6 +25,8 @@ class Graph(QWidget):
         #Chart Setup
         self.chart = QChart()
         self.chart_view = QChartView(self.chart,self)
+        self.chart_view.setRubberBand(QChartView.RubberBand.RectangleRubberBand)
+        self.chart.zoom(5)
         self.x_axis = QValueAxis()
         self.y_axis = QValueAxis()
         self.series = QLineSeries()
