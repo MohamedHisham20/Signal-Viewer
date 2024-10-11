@@ -1,10 +1,110 @@
 import sys
 import numpy as np
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import skrf as rf  # Smith chart plotting
 import pyqtgraph as pg  # Dynamic plotting
+
+
+# create class to make sonar graph using qpainter
+class SonarGraph(QWidget):
+    def __init__(self):
+        super().__init__()
+
+    def paintEvent(self, event):
+        qp = QPainter()
+        qp.begin(self)
+        self.drawSonar(qp)
+        qp.end()
+
+    def drawSonar(self, qp):
+        # Set the brush for the sonar
+        qp.setBrush(Qt.black)
+
+        # Draw the sonar
+        qp.drawEllipse(20, 20, 200, 200)
+
+        # Set the brush for the radar
+        qp.setBrush(Qt.red)
+
+        # Draw the radar
+        qp.drawEllipse(50, 50, 140, 140)
+
+        # Set the brush for the target
+        qp.setBrush(Qt.green)
+
+        # Draw the target
+        qp.drawEllipse(90, 90, 60, 60)
+
+
+# create class to make radar graph using qpainter
+class RadarGraph(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Dynamic Radar Graph")
+        self.setGeometry(100, 100, 400, 400)
+
+        self.radius = 100  # Radar circle radius
+        self.data = np.random.rand(100) * 360  # Random angles between 0 and 360 degrees
+        self.radar_angle = 0  # The starting angle for the radar line
+        self.radar_speed = 5  # Speed of the radar line rotation
+        self.hit_points = []  # Points to plot after being hit by radar
+
+        # Start a timer to update the radar sweep dynamically
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_radar)
+        self.timer.start(50)  # Update every 50ms
+
+    def update_radar(self):
+        """Update the radar sweep and check for 'hits'."""
+        # Increment the radar angle
+        self.radar_angle += self.radar_speed
+        if self.radar_angle >= 360:
+            self.radar_angle = 0
+
+        # Check if radar line passes any data points and add them to hit_points
+        for i, angle in enumerate(self.data):
+            if abs(self.radar_angle - angle) < 5:  # Check if radar is close to the point
+                # Random distance within the radar circle
+                distance = np.random.randint(30, self.radius)
+                x = 200 + distance * np.cos(np.radians(angle))
+                y = 200 - distance * np.sin(np.radians(angle))
+                self.hit_points.append((int(x), int(y)))
+
+        # Update the radar display
+        self.update()
+
+    def paintEvent(self, event):
+        """Draw the radar and dynamic points."""
+        qp = QPainter(self)
+        qp.setRenderHint(QPainter.Antialiasing)
+
+        # Draw the radar base (a circle)
+        qp.setPen(QPen(Qt.black, 2))
+        qp.setBrush(Qt.black)
+        qp.drawEllipse(100, 100, 200, 200)  # Radar base (circle)
+
+        # Draw the radar sweep (rotating line)
+        qp.setPen(QPen(Qt.red, 2))
+
+        # Calculate the end of the radar sweep based on the current angle
+        x = 200 + self.radius * np.cos(np.radians(self.radar_angle))
+        y = 200 - self.radius * np.sin(np.radians(self.radar_angle))
+        qp.drawLine(200, 200, int(x), int(y))
+
+        # Draw the radar target points that have been hit and connect them
+        qp.setPen(QPen(Qt.green, 2))
+        if len(self.hit_points) > 1:
+            for i in range(len(self.hit_points) - 1):
+                qp.drawLine(*self.hit_points[i], *self.hit_points[i+1])
+
+        # Optionally draw individual points
+        qp.setPen(QPen(Qt.green, 6))
+        for point in self.hit_points:
+            qp.drawPoint(*point)
 
 
 class SmithChartWidget(QWidget):
@@ -214,14 +314,14 @@ class MainWindow(QMainWindow):
         # self.setWindowTitle("Smith Chart in PyQt5")
 
         ################# Phase Portrait #################
-        # Create the phase portrait widget
-        phase_portrait_widget = PhasePortraitWidget(self)
-
-        # Set the central widget
-        self.setCentralWidget(phase_portrait_widget)
-
-        # Set the window title
-        self.setWindowTitle("Phase Portrait in PyQt5")
+        # # Create the phase portrait widget
+        # phase_portrait_widget = PhasePortraitWidget(self)
+        #
+        # # Set the central widget
+        # self.setCentralWidget(phase_portrait_widget)
+        #
+        # # Set the window title
+        # self.setWindowTitle("Phase Portrait in PyQt5")
 
         ################# Radar Display #################
         # # Create the radar display widget
@@ -232,6 +332,26 @@ class MainWindow(QMainWindow):
         #
         # # Set the window title
         # self.setWindowTitle("Radar Display in PyQt5")
+
+        ################# Sonar Graph #################
+        # # Create the sonar graph widget
+        # sonar_widget = SonarGraph()
+        #
+        # # Set the central widget
+        # self.setCentralWidget(sonar_widget)
+        #
+        # # Set the window title
+        # self.setWindowTitle("Sonar Graph in PyQt5")
+
+        ################# Radar Graph #################
+        # Create the radar graph widget
+        radar_widget = RadarGraph()
+
+        # Set the central widget
+        self.setCentralWidget(radar_widget)
+
+        # Set the window title
+        self.setWindowTitle("Radar Graph in PyQt5")
 
 
 if __name__ == "__main__":
