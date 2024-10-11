@@ -20,17 +20,18 @@ class ControlsWidget(QWidget):
         menu = QMenu(self)
         add_to_submenu = QMenu("Add to", self)
 
-        parent_window = self.parent().parent().parent().parent() # This is sooo wrong omg
-        if hasattr(parent_window, 'graphs'):
-            for graph in parent_window.graphs:
+        main_window = self.parent().parent().parent().parent()  # This is sooo wrong omg
+        add_to_graph = []
+        if hasattr(main_window, 'graphs'):
+            for graph in main_window.graphs:
                 graph_title = graph.ui.graph_title_lbl.text()
-                add_to_submenu.addAction(graph_title)
+                add_to_graph.append(add_to_submenu.addAction(graph_title))
 
         menu.addMenu(add_to_submenu)
         menu.addSeparator()
 
-        report_action = menu.addAction("Report")
-        remove_action = menu.addAction("Remove")
+        report = menu.addAction("Report")
+        remove = menu.addAction("Remove")
 
         menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
 
