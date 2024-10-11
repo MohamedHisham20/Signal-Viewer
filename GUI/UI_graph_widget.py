@@ -15,23 +15,28 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QPushButton,
-    QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget)
 
 class Ui_graph_widget(object):
     def setupUi(self, graph_widget):
         if not graph_widget.objectName():
             graph_widget.setObjectName(u"graph_widget")
-        graph_widget.resize(1100, 336)
+        graph_widget.resize(1100, 342)
         graph_widget.setMinimumSize(QSize(0, 336))
-        self.reorder_label = QLabel(graph_widget)
+        self.frame = QFrame(graph_widget)
+        self.frame.setObjectName(u"frame")
+        self.frame.setGeometry(QRect(10, 0, 1081, 331))
+        self.frame.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Shadow.Raised)
+        self.reorder_label = QLabel(self.frame)
         self.reorder_label.setObjectName(u"reorder_label")
         self.reorder_label.setGeometry(QRect(10, 160, 24, 24))
         self.reorder_label.setCursor(QCursor(Qt.OpenHandCursor))
         self.reorder_label.setAcceptDrops(True)
         self.reorder_label.setPixmap(QPixmap(u"./Icons/reorder.png"))
         self.reorder_label.setScaledContents(True)
-        self.graph_placeholder = QWidget(graph_widget)
+        self.graph_placeholder = QWidget(self.frame)
         self.graph_placeholder.setObjectName(u"graph_placeholder")
         self.graph_placeholder.setGeometry(QRect(50, 10, 1051, 261))
         self.verticalLayoutWidget = QWidget(self.graph_placeholder)
@@ -40,12 +45,7 @@ class Ui_graph_widget(object):
         self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.graph_title_lbl = QLabel(graph_widget)
-        self.graph_title_lbl.setObjectName(u"graph_title_lbl")
-        self.graph_title_lbl.setGeometry(QRect(50, 280, 201, 41))
-        self.graph_title_lbl.setStyleSheet(u"font: 24pt \"Helvetica Neue\";")
-        self.graph_title_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextEditorInteraction)
-        self.layoutWidget = QWidget(graph_widget)
+        self.layoutWidget = QWidget(self.frame)
         self.layoutWidget.setObjectName(u"layoutWidget")
         self.layoutWidget.setGeometry(QRect(370, 290, 321, 32))
         self.horizontalLayout = QHBoxLayout(self.layoutWidget)
@@ -104,6 +104,11 @@ class Ui_graph_widget(object):
 
         self.horizontalLayout.addWidget(self.end_btn)
 
+        self.graph_title_lbl = QLabel(self.frame)
+        self.graph_title_lbl.setObjectName(u"graph_title_lbl")
+        self.graph_title_lbl.setGeometry(QRect(50, 280, 201, 41))
+        self.graph_title_lbl.setStyleSheet(u"font: 24pt \"Helvetica Neue\";")
+        self.graph_title_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextEditorInteraction)
 
         self.retranslateUi(graph_widget)
 
@@ -113,11 +118,11 @@ class Ui_graph_widget(object):
     def retranslateUi(self, graph_widget):
         graph_widget.setWindowTitle(QCoreApplication.translate("graph_widget", u"graph_widget", None))
         self.reorder_label.setText("")
-        self.graph_title_lbl.setText(QCoreApplication.translate("graph_widget", u"Graph Title", None))
         self.beginning_btn.setText("")
         self.fast_backward_btn.setText("")
         self.pause_play_btn.setText("")
         self.fast_forward_btn.setText("")
         self.end_btn.setText("")
+        self.graph_title_lbl.setText(QCoreApplication.translate("graph_widget", u"Graph Title", None))
     # retranslateUi
 

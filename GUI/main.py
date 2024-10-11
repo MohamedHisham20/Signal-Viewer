@@ -1,6 +1,6 @@
 from PySide6.QtGui import QDrag
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QFrame
-from PySide6.QtCore import Qt, QMimeData, QPoint
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QMenu
+from PySide6.QtCore import Qt, QMimeData
 
 from UI_root_widget import Ui_root_widget
 from UI_controls_widget import Ui_Controls_Widget
@@ -12,6 +12,27 @@ class ControlsWidget(QWidget):
         super().__init__(parent)
         self.ui = Ui_Controls_Widget()
         self.ui.setupUi(self)
+
+        self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
+
+    def show_signal_list_context_menu(self, position):
+        menu = QMenu(self)
+        add_to_submenu = QMenu("Add to", self)
+
+        parent_window = self.parent().parent().parent().parent() # This is sooo wrong omg
+        if hasattr(parent_window, 'graphs'):
+            for graph in parent_window.graphs:
+                graph_title = graph.ui.graph_title_lbl.text()
+                add_to_submenu.addAction(graph_title)
+
+        menu.addMenu(add_to_submenu)
+        menu.addSeparator()
+
+        report_action = menu.addAction("Report")
+        remove_action = menu.addAction("Remove")
+
+        menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
 
 
 class GraphWidget(QWidget):
@@ -26,6 +47,30 @@ class GraphWidget(QWidget):
         self.ui.graph_title_lbl.setText(f"Graph {GraphWidget.instance_count}")
         self.drag_start_position = None
         self.is_dragging = False
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+
+    def show_context_menu(self, position):
+        menu = QMenu(self)
+        change_title = menu.addAction("Change Title")
+        menu.addSeparator()
+
+        add_signal_submenu = QMenu("Add Signal", self)
+        signal_from_file = add_signal_submenu.addAction("From File")
+        signal_from_web = add_signal_submenu.addAction("From the Web")
+        menu.addMenu(add_signal_submenu)
+        menu.addSeparator()
+
+        pause_play = menu.addAction("Pause/Play")
+        speed_up = menu.addAction("Speed Up")
+        slow_down = menu.addAction("Slow Down")
+        pan_begin = menu.addAction("Pan To Start")
+        pan_end = menu.addAction("Pan To End")
+        menu.addSeparator()
+
+        remove = menu.addAction("Remove Graph")
+
+        action = menu.exec(self.mapToGlobal(position))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
