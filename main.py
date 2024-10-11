@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel , QPushButton
 
 
 class MainWindow(QMainWindow):
@@ -7,10 +7,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Task1")
         self.setGeometry(100, 100, 800, 600)
+        #add lable
+        self.label = QLabel("Hello World",self)
+        self.btn = QPushButton("click" , self)
 
 
-app = QApplication(sys.argv)    
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
+
 
