@@ -21,6 +21,7 @@ class Graph(QWidget):
         self.change_name_btn = QPushButton("change name",self)
         self.reset_btn = QPushButton("reset",self)
         self.delete_btn = QPushButton("delete Graph",self)
+        self.new_graph_btn = QPushButton("new graph",self)
         
         #Chart Setup
         self.chart = QChart()
@@ -63,6 +64,7 @@ class Graph(QWidget):
         self.graph_controls_layout.addWidget(self.change_name_btn)
         self.graph_controls_layout.addWidget(self.reset_btn)
         self.graph_controls_layout.addWidget(self.delete_btn)
+        self.graph_controls_layout.addWidget(self.new_graph_btn)
         
         self.signal_controls_layout.addWidget(self.upload_btn)
         self.signal_controls_layout.addWidget(self.play_pause_btn)

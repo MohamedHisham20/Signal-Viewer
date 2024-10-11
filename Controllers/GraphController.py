@@ -18,6 +18,8 @@ class GraphController:
     """        
     @staticmethod
     def connect_btns_actions(graph:Graph):
+        graph.new_graph_btn.clicked.connect(GraphController.add_graph)
+        graph.new_graph_btn.clicked.connect(lambda:GraphController.delete_file(graph,graph.active_file))
         graph.reset_btn.clicked.connect(lambda:GraphController.clear_signal(graph))
         graph.upload_btn.clicked.connect(lambda:GraphController.upload_signal_file(graph))
         graph.play_pause_btn.clicked.connect(lambda:GraphController.toggle_play_pause_btn(graph))
@@ -27,6 +29,13 @@ class GraphController:
         graph.zoom_in_btn.clicked.connect(lambda:GraphController.zoom_in(graph))
         graph.zoom_out_btn.clicked.connect(lambda:GraphController.zoom_out(graph))
         
+    
+    @staticmethod
+    def add_graph():
+        graph = Graph()
+        return graph
+    
+    
     @staticmethod
     def upload_signal_file(graph:Graph):
         """loads a csv file\n
