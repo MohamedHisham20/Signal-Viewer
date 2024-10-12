@@ -53,6 +53,7 @@ class Ui_graph_widget(object):
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.beginning_btn = QPushButton(self.layoutWidget)
         self.beginning_btn.setObjectName(u"beginning_btn")
+        self.beginning_btn.setEnabled(False)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -66,6 +67,7 @@ class Ui_graph_widget(object):
 
         self.fast_backward_btn = QPushButton(self.layoutWidget)
         self.fast_backward_btn.setObjectName(u"fast_backward_btn")
+        self.fast_backward_btn.setEnabled(False)
         sizePolicy.setHeightForWidth(self.fast_backward_btn.sizePolicy().hasHeightForWidth())
         self.fast_backward_btn.setSizePolicy(sizePolicy)
         icon1 = QIcon()
@@ -76,6 +78,7 @@ class Ui_graph_widget(object):
 
         self.pause_play_btn = QPushButton(self.layoutWidget)
         self.pause_play_btn.setObjectName(u"pause_play_btn")
+        self.pause_play_btn.setEnabled(False)
         sizePolicy.setHeightForWidth(self.pause_play_btn.sizePolicy().hasHeightForWidth())
         self.pause_play_btn.setSizePolicy(sizePolicy)
         icon2 = QIcon()
@@ -86,6 +89,7 @@ class Ui_graph_widget(object):
 
         self.fast_forward_btn = QPushButton(self.layoutWidget)
         self.fast_forward_btn.setObjectName(u"fast_forward_btn")
+        self.fast_forward_btn.setEnabled(False)
         sizePolicy.setHeightForWidth(self.fast_forward_btn.sizePolicy().hasHeightForWidth())
         self.fast_forward_btn.setSizePolicy(sizePolicy)
         icon3 = QIcon()
@@ -96,6 +100,7 @@ class Ui_graph_widget(object):
 
         self.end_btn = QPushButton(self.layoutWidget)
         self.end_btn.setObjectName(u"end_btn")
+        self.end_btn.setEnabled(False)
         sizePolicy.setHeightForWidth(self.end_btn.sizePolicy().hasHeightForWidth())
         self.end_btn.setSizePolicy(sizePolicy)
         icon4 = QIcon()
