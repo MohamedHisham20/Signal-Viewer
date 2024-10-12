@@ -1,15 +1,16 @@
-from PySide6.QtWidgets import (QWidget, QRubberBand, QVBoxLayout,
+from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout,
 QHBoxLayout, QPushButton ,QScrollBar, QLineEdit)
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
 
 
 class Graph(QWidget):
-    def __init__(self):
+    def __init__(self,graph_name:str="Graph 1"):
         """ Construct a Graph with name if given """
         super().__init__()
         
         #Graph member variables initialization
+        self.name = graph_name
         self.graph_layout = QVBoxLayout(self)
         
         #Container for graph btns
@@ -17,8 +18,10 @@ class Graph(QWidget):
         self.graph_controls_layout = QHBoxLayout(self.graph_controls)
            
         # Graph controls
-        self.name_field = QLineEdit("Graph_Name",self)
-        self.change_name_btn = QPushButton("change name",self)
+        self.name_label = QLabel(self.name,self)
+        self.name_field = QLineEdit(self)
+        self.name_field.hide()
+        self.change_submit_name_btn = QPushButton("change name",self)
         self.reset_btn = QPushButton("reset",self)
         self.delete_btn = QPushButton("delete Graph",self)
         self.new_graph_btn = QPushButton("new graph",self)
@@ -31,6 +34,7 @@ class Graph(QWidget):
         self.x_axis = QValueAxis()
         self.y_axis = QValueAxis()
         self.series = QLineSeries()
+        self.chart.addSeries(self.series)
         self.data_pnts = []
         self.timer = QTimer()
         self.delta_interval = 2 #default change in timer interval
@@ -60,8 +64,9 @@ class Graph(QWidget):
         self.empty = True
         
         #Layout setup
+        self.graph_controls_layout.addWidget(self.name_label)
         self.graph_controls_layout.addWidget(self.name_field)
-        self.graph_controls_layout.addWidget(self.change_name_btn)
+        self.graph_controls_layout.addWidget(self.change_submit_name_btn)
         self.graph_controls_layout.addWidget(self.reset_btn)
         self.graph_controls_layout.addWidget(self.delete_btn)
         self.graph_controls_layout.addWidget(self.new_graph_btn)
