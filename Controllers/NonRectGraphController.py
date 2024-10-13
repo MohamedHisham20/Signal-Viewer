@@ -1,62 +1,37 @@
 import sys
 import numpy as np
+import pandas as pd
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import skrf as rf  # Smith chart plotting
-import pyqtgraph as pg  # Dynamic plotting
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QScrollBar, QHBoxLayout, QFileDialog
 
-
-# create class to make sonar graph using qpainter
-class SonarGraph(QWidget):
-    def __init__(self):
-        super().__init__()
-
-    def paintEvent(self, event):
-        qp = QPainter()
-        qp.begin(self)
-        self.drawSonar(qp)
-        qp.end()
-
-    def drawSonar(self, qp):
-        # Set the brush for the sonar
-        qp.setBrush(Qt.black)
-
-        # Draw the sonar
-        qp.drawEllipse(20, 20, 200, 200)
-
-        # Set the brush for the radar
-        qp.setBrush(Qt.red)
-
-        # Draw the radar
-        qp.drawEllipse(50, 50, 140, 140)
-
-        # Set the brush for the target
-        qp.setBrush(Qt.green)
-
-        # Draw the target
-        qp.drawEllipse(90, 90, 60, 60)
-
-
-# create class to make radar graph using qpainter
 class RadarGraph(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Dynamic Radar Graph")
-        self.setGeometry(100, 100, 400, 400)
-
-        self.radius = 100  # Radar circle radius
-        self.data = np.random.rand(100) * 360  # Random angles between 0 and 360 degrees
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(400, 400)
+        self.radius = 100  # Radar circle radius (relative value, actual will scale)
+        self.data = np.array([])  # To hold the loaded signal data in angles (0 to 360 degrees)
         self.radar_angle = 0  # The starting angle for the radar line
         self.radar_speed = 5  # Speed of the radar line rotation
-        self.hit_points = []  # Points to plot after being hit by radar
+        self.hit_points = []  # Points that have been hit by radar (persist)
+        self.remaining_points = []  # Points still visible, disappear when radar passes
+        self.prev_hit_point = None  # Previous point to draw lines
 
         # Start a timer to update the radar sweep dynamically
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_radar)
         self.timer.start(50)  # Update every 50ms
+
+    def load_data_from_csv(self, file_path):
+        """Load signal data from a CSV file."""
+        try:
+            data = pd.read_csv(file_path)
+            # Scale the signal values to fit within 360 degrees
+            scaled_data = (data["hart"].values - np.min(data["hart"].values)) / (np.max(data["hart"].values) - np.min(data["hart"].values)) * 360
+            self.data = scaled_data
+            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
+        except Exception as e:
+            print(f"Error loading file: {e}")
 
     def update_radar(self):
         """Update the radar sweep and check for 'hits'."""
@@ -64,294 +39,173 @@ class RadarGraph(QWidget):
         self.radar_angle += self.radar_speed
         if self.radar_angle >= 360:
             self.radar_angle = 0
+            self.hit_points.clear()
+            self.prev_hit_point = None
+            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
 
-        # Check if radar line passes any data points and add them to hit_points
-        for i, angle in enumerate(self.data):
-            if abs(self.radar_angle - angle) < 5:  # Check if radar is close to the point
-                # Random distance within the radar circle
+        self.update_hit_points()
+        self.update()
+
+    def update_hit_points(self):
+        """Update the hit points based on radar angle and mark points as hit."""
+        to_remove = []
+        for i, angle in self.remaining_points:
+            if angle <= self.radar_angle:
+                # Random distance within the radar circle (scaled)
                 distance = np.random.randint(30, self.radius)
-                x = 200 + distance * np.cos(np.radians(angle))
-                y = 200 - distance * np.sin(np.radians(angle))
+                scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
+                x = self.width() // 2 + scaled_distance * np.cos(np.radians(angle))
+                y = self.height() // 2 - scaled_distance * np.sin(np.radians(angle))
                 self.hit_points.append((int(x), int(y)))
+                to_remove.append((i, angle))
 
-        # Update the radar display
+                # Save the last point to draw lines
+                if len(self.hit_points) > 1:
+                    self.prev_hit_point = self.hit_points[-2]
+
+        # Remove points that have been hit
+        self.remaining_points = [p for p in self.remaining_points if p not in to_remove]
+
+    def scroll_radar_angle(self, angle):
+        """Set radar angle manually based on scrollbar and update hit points accordingly."""
+        self.radar_angle = angle
+
+        # Create a list of points that should be hit (at or before radar_angle)
+        to_hit = []
+        still_remaining = []
+
+        # Update hit points based on radar angle (add points that should now be hit)
+        for i, point_angle in self.remaining_points:
+            if point_angle <= self.radar_angle:  # Points at or before radar angle should be hit
+                to_hit.append((i, point_angle))
+            else:
+                still_remaining.append((i, point_angle))  # Points after the radar angle remain
+
+        # Add new points to the hit points
+        for i, point_angle in to_hit:
+            # Calculate position for the hit points
+            distance = np.random.randint(30, self.radius)
+            scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
+            x = self.width() // 2 + scaled_distance * np.cos(np.radians(point_angle))
+            y = self.height() // 2 - scaled_distance * np.sin(np.radians(point_angle))
+            self.hit_points.append((int(x), int(y)))
+
+        # Update remaining points
+        self.remaining_points = still_remaining
+
+        # Remove points that are after the radar angle when scrolling back
+        for point in self.hit_points[:]:
+            # Convert the x and y coordinates back to angle (reverse calculation)
+            center_x = self.width() // 2
+            center_y = self.height() // 2
+            dx = point[0] - center_x
+            dy = center_y - point[1]
+            point_angle = np.degrees(np.arctan2(dy, dx)) % 360
+
+            if point_angle > self.radar_angle:
+                self.hit_points.remove(point)
+
         self.update()
 
     def paintEvent(self, event):
-        """Draw the radar and dynamic points."""
+        """Draw the radar, dynamic points, and lines between points."""
         qp = QPainter(self)
         qp.setRenderHint(QPainter.Antialiasing)
+
+        # Set the center and radius based on window size
+        center_x = self.width() // 2
+        center_y = self.height() // 2
+        radar_radius = min(center_x, center_y) - 20  # Adjusted radius to fit the window
+        self.radius = radar_radius
 
         # Draw the radar base (a circle)
         qp.setPen(QPen(Qt.black, 2))
         qp.setBrush(Qt.black)
-        qp.drawEllipse(100, 100, 200, 200)  # Radar base (circle)
+        qp.drawEllipse(center_x - radar_radius, center_y - radar_radius, radar_radius * 2, radar_radius * 2)  # Radar base
 
         # Draw the radar sweep (rotating line)
         qp.setPen(QPen(Qt.red, 2))
 
         # Calculate the end of the radar sweep based on the current angle
-        x = 200 + self.radius * np.cos(np.radians(self.radar_angle))
-        y = 200 - self.radius * np.sin(np.radians(self.radar_angle))
-        qp.drawLine(200, 200, int(x), int(y))
+        x = center_x + radar_radius * np.cos(np.radians(self.radar_angle))
+        y = center_y - radar_radius * np.sin(np.radians(self.radar_angle))
+        qp.drawLine(center_x, center_y, int(x), int(y))
 
-        # Draw the radar target points that have been hit and connect them
-        qp.setPen(QPen(Qt.green, 2))
+        # Draw lines between consecutive hit points
         if len(self.hit_points) > 1:
-            for i in range(len(self.hit_points) - 1):
-                qp.drawLine(*self.hit_points[i], *self.hit_points[i+1])
+            qp.setPen(QPen(Qt.blue, 2))
+            for i in range(1, len(self.hit_points)):
+                qp.drawLine(self.hit_points[i - 1][0], self.hit_points[i - 1][1], self.hit_points[i][0], self.hit_points[i][1])
 
-        # Optionally draw individual points
+        # Draw the radar target points that have been hit
         qp.setPen(QPen(Qt.green, 6))
         for point in self.hit_points:
             qp.drawPoint(*point)
 
-
-class SmithChartWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        layout = QVBoxLayout()
-        self.graph_widget = pg.PlotWidget()
-        layout.addWidget(self.graph_widget)
-        self.setLayout(layout)
-
-        # Load the S1P file
-        self.network = rf.Network('example.s1p')
-        self.s11 = self.network.s[:, 0, 0]  # Extract S11 parameter
-
-        # Set up the graph: limit the axis ranges, labels, etc.
-        self.graph_widget.setXRange(-1.5, 1.5)
-        self.graph_widget.setYRange(-1.5, 1.5)
-        self.graph_widget.setTitle("Dynamic Smith Chart")
-        self.graph_widget.setLabel('left', 'Imaginary')
-        self.graph_widget.setLabel('bottom', 'Real')
-
-        # Prepare for dynamic plotting
-        self.ptr = 0  # Pointer to the current point
-        pen = pg.mkPen(color='r', width=2, style=pg.QtCore.Qt.DashLine)
-        self.plot_data = self.graph_widget.plot([], [], pen=pen, symbol='o', symbolBrush='b')
-
-        # Start a timer to update the graph dynamically
-        self.timer = pg.QtCore.QTimer()
-        self.timer.timeout.connect(self.update_plot)
-        self.timer.start(200)  # Update every 200 ms
-
-    def update_plot(self):
-        """Update the graph by adding one point at a time."""
-        if self.ptr < len(self.s11):
-            real_part = np.real(self.s11[:self.ptr + 1])
-            imag_part = np.imag(self.s11[:self.ptr + 1])
-
-            # Update the plot data
-            self.plot_data.setData(real_part, imag_part)
-            self.ptr += 1
-        else:
-            self.timer.stop()  # Stop the timer once all points are plotted
+        self.update()
 
 
-class PhasePortraitWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        layout = QVBoxLayout()
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
-        self.setLayout(layout)
-
-        self.plot_phase_portrait()
-
-    def plot_phase_portrait(self):
-        ax = self.figure.add_subplot(111)
-
-        # Simulate a simple harmonic oscillator for phase portrait (e.g., pendulum)
-        t = np.linspace(0, 10, 1000)
-        x = np.sin(t)
-        v = np.cos(t)
-
-        ax.plot(x, v)
-
-        ax.set_xlabel("Position")
-        ax.set_ylabel("Velocity")
-        ax.set_title("Phase Portrait (Simple Harmonic Oscillator)")
-        self.canvas.draw()
-
-
-class RadarDisplayWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        layout = QVBoxLayout()
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
-        self.setLayout(layout)
-
-        self.plot_radar_display()
-
-    def plot_radar_display(self):
-        ax = self.figure.add_subplot(111, projection='polar')
-
-        # Simulating radar data
-        theta = np.linspace(0, 2 * np.pi, 500)
-        r = np.random.random(500) * 10  # Simulated distances
-
-        ax.scatter(theta, r, c='green', marker='o')  # Radar points
-
-        ax.set_title("Radar Display (PPI)")
-        ax.set_ylim(0, 10)
-        self.canvas.draw()
-
-
-class PolarGraphWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        # Create the layout
-        layout = QVBoxLayout()
-
-        # Create a figure
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-
-        # Add the canvas to the layout
-        layout.addWidget(self.canvas)
-
-        # Set the layout for the widget
-        self.setLayout(layout)
-
-        # Call the method to plot the polar graph
-        self.plot_polar()
-
-    def plot_polar(self):
-        # Create a polar subplot
-        ax = self.figure.add_subplot(111, projection='polar')
-
-        # Generate data for the polar plot
-        theta = np.linspace(0, 2 * np.pi, 100)
-        r = np.abs(np.sin(2 * theta))
-
-        # Plot the data
-        ax.plot(theta, r)
-
-        # Set title
-        ax.set_title('Polar Graph Example in PyQt5', va='bottom')
-
-        # Redraw the canvas to display the plot
-        self.canvas.draw()
-
-
-# create class for spiral graph
-class DynamicSpiralGraph(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        layout = QVBoxLayout()
-        self.graph_widget = pg.PlotWidget()
-        layout.addWidget(self.graph_widget)
-        self.setLayout(layout)
-
-        # Generate spiral data
-        self.theta = np.linspace(0, 10 * np.pi, 1000)  # Angle from 0 to 10π
-        self.r = np.linspace(0, 10, 1000)  # Radius increasing from 0 to 10
-
-        # Convert polar to Cartesian coordinates
-        self.x = self.r * np.cos(self.theta)
-        self.y = self.r * np.sin(self.theta)
-
-        # Initialize plot
-        self.spiral_data = self.graph_widget.plot([], [], pen=pg.mkPen('b', width=2))
-
-        # Counter for dynamic drawing
-        self.ptr = 0
-
-        # Set up timer for dynamic updates
-        self.timer = pg.QtCore.QTimer()
-        self.timer.timeout.connect(self.update_plot)
-        self.timer.start(50)  # Update every 50 ms
-
-    def update_plot(self):
-        """Update the graph by adding one point at a time."""
-        if self.ptr < len(self.x):
-            self.spiral_data.setData(self.x[:self.ptr], self.y[:self.ptr])
-            self.ptr += 10  # Increment the pointer to gradually draw the spiral
-        else:
-            self.timer.stop()  # Stop the timer when the plot is fully drawn
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        ################# Polar Graph #################
-        # # Set the window title
-        # self.setWindowTitle("Polar Graph in PyQt5")
-        #
-        # # Create the central widget
-        # central_widget = PolarGraphWidget(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(central_widget)
+        self.setWindowTitle("Radar Graph with CSV Signal Data")
 
-        ################# Spiral Graph #################
-        # # Create the spiral widget
-        # spiral_widget = DynamicSpiralGraph(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(spiral_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Spiral Graph in PyQt5")
+        # Create radar graph widget
+        self.radar_widget = RadarGraph()
 
-        ################# Smith Chart #################
-        # # Create the smith chart widget
-        # smith_widget = SmithChartWidget(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(smith_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Smith Chart in PyQt5")
+        # Create play and pause buttons
+        self.play_button = QPushButton("Play")
+        self.pause_button = QPushButton("Pause")
+        self.play_button.clicked.connect(self.play_radar)
+        self.pause_button.clicked.connect(self.pause_radar)
 
-        ################# Phase Portrait #################
-        # # Create the phase portrait widget
-        # phase_portrait_widget = PhasePortraitWidget(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(phase_portrait_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Phase Portrait in PyQt5")
+        # Create a button to load CSV
+        self.load_csv_button = QPushButton("Load CSV")
+        self.load_csv_button.clicked.connect(self.load_csv)
 
-        ################# Radar Display #################
-        # # Create the radar display widget
-        # radar_display_widget = RadarDisplayWidget(self)
-        #
-        # # Set the central widget
-        # self.setCentralWidget(radar_display_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Radar Display in PyQt5")
+        # Create a horizontal scrollbar
+        self.scroll_bar = QScrollBar(Qt.Horizontal)
+        self.scroll_bar.setMinimum(0)
+        self.scroll_bar.setMaximum(360)
+        self.scroll_bar.setValue(0)
+        self.scroll_bar.sliderMoved.connect(self.scroll_radar)
 
-        ################# Sonar Graph #################
-        # # Create the sonar graph widget
-        # sonar_widget = SonarGraph()
-        #
-        # # Set the central widget
-        # self.setCentralWidget(sonar_widget)
-        #
-        # # Set the window title
-        # self.setWindowTitle("Sonar Graph in PyQt5")
+        # Set up layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.radar_widget)
 
-        ################# Radar Graph #################
-        # Create the radar graph widget
-        radar_widget = RadarGraph()
+        # Add buttons and scrollbar
+        controls_layout = QHBoxLayout()
+        controls_layout.addWidget(self.play_button)
+        controls_layout.addWidget(self.pause_button)
+        controls_layout.addWidget(self.load_csv_button)
+        layout.addLayout(controls_layout)
+        layout.addWidget(self.scroll_bar)
 
-        # Set the central widget
-        self.setCentralWidget(radar_widget)
+        # Set a central widget with layout
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
 
-        # Set the window title
-        self.setWindowTitle("Radar Graph in PyQt5")
+    def play_radar(self):
+        """Resume radar rotation."""
+        self.radar_widget.timer.start(50)
+
+    def pause_radar(self):
+        """Pause radar rotation."""
+        self.radar_widget.timer.stop()
+
+    def scroll_radar(self, value):
+        """Move radar sweep based on scrollbar."""
+        self.radar_widget.scroll_radar_angle(value)
+
+    def load_csv(self):
+        """Open a file dialog to load CSV data."""
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load CSV", "", "CSV Files (*.csv)")
+        if file_path:
+            self.radar_widget.load_data_from_csv(file_path)
 
 
 if __name__ == "__main__":
