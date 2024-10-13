@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QWidget, QMenu
 from PySide6.QtCore import Qt
 
 from GUI.UI.UI_controls_widget import Ui_Controls_Widget
+import Glue_popup
 
 
 class ControlsWidget(QWidget):
@@ -12,6 +13,9 @@ class ControlsWidget(QWidget):
 
         self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
+
+        self.ui.glue_btn.clicked.connect(self.show_glue_popup)
+        self.ui.glue_btn.setEnabled(True)  # Set enabled when signals are selected
 
     def show_signal_list_context_menu(self, position):
         menu = QMenu(self)
@@ -31,3 +35,9 @@ class ControlsWidget(QWidget):
         remove = menu.addAction("Remove")
 
         menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
+
+    def show_glue_popup(self):
+        signal1 = [[0, 0], [2, 3], [10, 4]]
+        signal2 = [[1, 5], [2, 6], [3, 7]]
+        glue_popup = Glue_popup.GlueSignalsWindow(signal1, signal2, None, self)
+        glue_popup.exec()
