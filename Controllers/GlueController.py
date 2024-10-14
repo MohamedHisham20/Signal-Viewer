@@ -7,7 +7,7 @@ import requests
 from io import StringIO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from GUI.UI.Graph import Graph
+from GUI.Graph import Graph
 from PySide6.QtCore import QPointF 
 class GlueController:
     def __init__(self):

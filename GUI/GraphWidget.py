@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMenu, QVBoxLayout
 from PySide6.QtCore import Qt, QMimeData
 
 from GUI.UI.UI_graph_widget import Ui_graph_widget
-from GUI.UI.Graph import Graph
+from GUI.Graph import Graph
 from Controllers.GraphController import GraphController
 
 

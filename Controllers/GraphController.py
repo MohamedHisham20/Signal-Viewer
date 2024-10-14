@@ -1,13 +1,15 @@
 from PySide6.QtWidgets import (QFileDialog)
 from PySide6.QtCharts import QLineSeries
 from PySide6.QtCore import QPointF
+from PySide6.QtGui import QPen, QColor
 import sys
 import csv
 import os
 
-from GUI.UI.Graph import Graph
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+from GUI.Graph import Graph
 from GUI.Signal import Signal
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))              
+              
 
                        
 class GraphController:
@@ -18,7 +20,7 @@ class GraphController:
     """        
     
     def __init__(self):
-        print("A new Graph has been constructed")
+        print("A Graph Controller has been constructed")    
     
     
     def mount_btns_actions(self,graph:Graph):
@@ -32,17 +34,43 @@ class GraphController:
         graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph))
         graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph))
         graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph))
+        
+        graph.timer.timeout.connect(lambda:self.plot_signals(graph))
             
     
     def get_number_of_signals_in_graph(self,graph:Graph):    
         return graph.signals_counter
     
     
-    def add_signal_to_graph(self,signal_ID ,data_pnts, graph:Graph):
+    def add_signal_to_graph(self,signal_ID , data_pnts, graph:Graph):
         """stores data points in graph and turns signal"""
         new_signal = Signal(signal_ID, data_pnts)
         graph.signals.append(new_signal)
+        graph.signals_counter+=1
         
+    
+    def show_signal(self, signal_id:int, graph:Graph):
+        signal_id = str(signal_id)
+        
+        for series in graph.chart.series():
+            if series.name() == signal_id:
+                if series.isVisible(): return
+                else:
+                    series.show()
+                    break
+                
+                
+    def hide_signal(self, signal_id:int, graph:Graph):
+        signal_id = str(signal_id)
+        
+        for series in graph.chart.series():
+            if series.name() == signal_id:
+                if series.isVisible():
+                    series.hide()
+                    break
+                else: return                
+                
+    
     
     def toggle_play_pause_btn(self, graph:Graph):
         """Cotrols playing and pausing\n
@@ -58,46 +86,43 @@ class GraphController:
             graph.play_pause_btn.setText("play")
             
         else:
-            if graph.active:
+            if graph.plotting_index > 0:
                 graph.timer.start(graph.timer.interval())
                 graph.play_pause_btn.setText("pause")
             else:
-                graph.timer.start()
+                graph.timer.start(graph.timer.interval())
+                graph.play_pause_btn.setText("pause")
                 self.get_chart_ready(graph)    
 
                     
-    def get_chart_ready(self, graph:Graph):
+    def get_chart_ready(self, graph:Graph, interval:int = 20):
         graph.chart.removeAllSeries()
         graph.plotting_index = 0
+        graph.active = True
         
-        for _ in graph.signals:
+        for signal in graph.signals:
             series = QLineSeries()
+            series.setName(str(signal.ID))
             graph.chart.addSeries(series)
             
         graph.chart.createDefaultAxes()
-        graph.timer.start()
          
     def plot_signals(self, graph:Graph):
-        all_signals_plotted = False
-        i = 0
-        graph.active = True
+        all_signals_data_pnts_plotted = True
         
-        while not all_signals_plotted:
-            signals_skipped_per_plotting_indx = 0
-            for signal in graph.signals:
-                if graph.plotting_index < len(signal.data_qpnts):
-                    signal_series = graph.chart.series()[i]
-                    if isinstance(signal_series, QLineSeries):
-                        signal_series.append(signal.data_qpnts[graph.plotting_index])
-                else : signals_skipped_per_plotting_indx+=1
-                i+=1
-            
-            if signals_skipped_per_plotting_indx == len(graph.signals):
-                all_signals_plotted = True        
-            else: graph.plotting_index+=1            
+        for i, signal in enumerate(graph.signals):
+            if graph.plotting_index < len(signal.data_qpnts):
+                signal_series = graph.chart.series()[i]
+                if isinstance(signal_series, QLineSeries):
+                    signal_series.append(signal.data_qpnts[graph.plotting_index])            
+                all_signals_data_pnts_plotted = False
                 
-        graph.timer.stop()
-        graph.active = False
+        if all_signals_data_pnts_plotted:
+            graph.timer.stop()
+            graph.active = False
+        else: graph.plotting_index+=1    
+            
+    
     
     def reset_graph(self,graph:Graph):
         """Zeros the graph but the signals' files still exist.\n
