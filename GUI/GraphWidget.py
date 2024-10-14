@@ -12,18 +12,21 @@ class GraphWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setAcceptDrops(True)
         self.ui = Ui_graph_widget()
         self.ui.setupUi(self)
-
+        self.initial_position = None
         self.playing_state = True
         self.play_icon = QIcon('./Icons/play.png')
         self.pause_icon = QIcon('./Icons/pause.png')
-
+        self.ChangeOrder = 'no'
         self.graphController = GraphController()
         self.graph = Graph()
         if self.ui.graph_placeholder.layout() is None:
             self.ui.graph_placeholder.setLayout(QVBoxLayout())
         self.ui.graph_placeholder.layout().addWidget(self.graph)
+        self.swapAction = lambda: None
+        
 
         GraphWidget.instance_count += 1
         self.setObjectName(f"graph_widget_{GraphWidget.instance_count}")
@@ -47,7 +50,7 @@ class GraphWidget(QWidget):
         menu = QMenu(self)
         change_title = menu.addAction("Change Title")
         menu.addSeparator()
-
+    
         add_signal_submenu = QMenu("Add Signal", self)
         signal_from_file = add_signal_submenu.addAction("From File")
         signal_from_web = add_signal_submenu.addAction("From the Web")
@@ -94,9 +97,8 @@ class GraphWidget(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            if self.ui.reorder_label.geometry().contains(event.position().toPoint()):
-                self.drag_start_position = event.position().toPoint()
-                self.is_dragging = True
+            self.drag_start_position = event.position().toPoint() if hasattr(event, 'position') else event.pos()
+            self.is_dragging = True
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton and self.drag_start_position is not None and self.is_dragging:
@@ -114,12 +116,38 @@ class GraphWidget(QWidget):
                 self.is_dragging = False
 
     def mouseReleaseEvent(self, event):
+        print('Mouse released.')
         self.is_dragging = False
         self.drag_start_position = None
 
-    def dropEvent(self, event):
+    def dragEnterEvent(self, event):
+        """Accept the drag event."""
+        self.initial_position = self.drag_start_position.y()  # Store the initial Y-position
+
         if event.mimeData().hasText():
-            event.accept()
+            event.acceptProposedAction()  # Accept the action so the drop can happen
+
+    def dropEvent(self, event):
+        print(self.initial_position)
+        if event.mimeData().hasText():
+            drop_position = event.position().toPoint() if hasattr(event, 'position') else event.pos()
+            event.acceptProposedAction()
+            self.calculate_y_distance(drop_position.y())  # Calculate the Y-axis movement
+
+    def calculate_y_distance(self, drop_y_position):
+        """Calculate how far the object has moved in the Y-axis."""
+        if self.initial_position is not None:
+            y_distance = drop_y_position - self.initial_position
+            print(f'The object moved {y_distance} pixels in the Y-axis.')
+            threshold = 10
+            if y_distance < -threshold:
+                self.ChangeOrder = 'up'
+                self.swapAction()
+            elif y_distance > threshold:
+                self.ChangeOrder = 'down'
+                self.swapAction()
+        else:
+            print('Initial position not set.', y_distance)
 
     def toggle_pause_play(self):
         try:
