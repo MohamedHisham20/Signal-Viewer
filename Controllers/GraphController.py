@@ -1,12 +1,12 @@
 from PySide6.QtWidgets import (QFileDialog)
-from PySide6.QtCore import QPointF, QMetaMethod 
+from PySide6.QtCharts import QLineSeries
 import sys
 import csv
 import os
-from functools import partial
 
 
 from GUI.Graph import Graph
+from GUI.Signal import Signal
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))              
 
                        
@@ -16,301 +16,148 @@ class GraphController:
     outside this class.\n\n
     Hover over a function name for info
     """        
-    @staticmethod
-    def connect_btns_actions(graph:Graph):
+    
+    def __init__(self):
+        print("A new Graph has been constructed")
+    
+    
+    def mount_btns_actions(self,graph:Graph):
         """This method has to be called immediately after constructing a graph\n
         to mount action on buttons"""
         
-        graph.change_submit_name_btn.clicked.connect(lambda:GraphController.toggle_change_submit_name_btn(graph))
-        graph.reset_btn.clicked.connect(lambda:GraphController.clear_signal(graph))
-        graph.delete_btn.clicked.connect(lambda:GraphController.delete_file(graph,graph.active_file))
-        graph.new_graph_btn.clicked.connect(GraphController.add_graph)
-        graph.upload_btn.clicked.connect(lambda:GraphController.upload_file(graph))
-        graph.play_pause_btn.clicked.connect(lambda:GraphController.toggle_play_pause_btn(graph))
-        graph.replay_btn.clicked.connect(lambda:GraphController.replay_signal(graph))
-        graph.zoom_in_btn.clicked.connect(lambda:GraphController.zoom_in(graph))
-        graph.zoom_out_btn.clicked.connect(lambda:GraphController.zoom_out(graph))
-        graph.speed_up_btn.clicked.connect(lambda:GraphController.increase_plotting_speed(graph))
-        graph.speed_down_btn.clicked.connect(lambda:GraphController.decrease_plotting_speed(graph))
-        
-        
-    @staticmethod
-    def add_graph(graph_name:str):
-        """connected with new graph button"""
-        graph = Graph(graph_name)
-        return graph
-    
-    
-    @staticmethod
-    def upload_file(graph:Graph):
-        """loads a csv file\n
-        connected with upload button"""        
-        file_path, _ = QFileDialog.getOpenFileName(None, "Open Signal File", "", "CSV Files (*.csv);;All Files (*)")
-        
-        if file_path in graph.uploaded_files:
-            print("File already exists")
-            return
-        
-        #checks if there was another signal being plotted
-        if graph.timer.isActive():
-            graph.timer.stop()
-            GraphController.__unload_signal(graph)
-        
-        if file_path:
-            graph.uploaded_files.append(file_path)
-            graph.active_file = file_path
-            print("File Uploaded")
-            GraphController.__load_signal(graph, file_path)
-        else: print("Error in uploading file")    
-    
-    
-    @staticmethod
-    def delete_file(graph:Graph,file_path:str):
-        """connected with delete button"""
-        if not file_path in graph.uploaded_files:
-            print("This file was not uploaded")
-            return
-        
-        graph.active_file = file_path
-        graph.uploaded_files.remove(file_path)
-        graph.active_file = ""
-        
-    
-    @staticmethod
-    def __load_signal(graph:Graph,file_path:str):
-        """Loads the signal data points into graph to be ready for plotting\n
-        upon pressing play button
-        """
-        #checks if there was another already loaded signal
-        if GraphController.is_graph_loaded(graph):
-            GraphController.__unload_signal(graph)
-         
-        graph.active_file = file_path
-        try:
-            with open(file_path, mode='r') as file:
-                reader = csv.reader(file)
-                next(reader)  # Skip header
-                for row in reader:
-                    x, y = float(row[0]), float(row[1])
-                    pnt = QPointF(x,y)
-                    graph.data_pnts.append(pnt)
-                    
-                graph.is_loaded =True
-                print("signal loaded successfully")    
-        except Exception as e:
-            print(f"An error occurred while reading the file: {e}")    
+        graph.play_pause_btn.clicked.connect(lambda:self.toggle_play_pause_btn(graph))
+        graph.replay_btn.clicked.connect(lambda:self.replay_signal(graph))
+        graph.reset_btn.clicked.connect(lambda:self.reset_graph(graph))
+        graph.zoom_in_btn.clicked.connect(lambda:self.zoom_in(graph))
+        graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph))
+        graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph))
+        graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph))
             
     
-    @staticmethod
-    def clear_signal(graph:Graph):
-        """Empties the graph but the signal file still exists.\n
-        The signal is also still stored so, it can be played again"""
-        if graph.empty:
-            print("graph is already empty")
-            return
+    def get_number_of_signals_in_graph(self,graph:Graph):    
+        return graph.signals_counter
+    
+    
+    def add_signal_to_graph(self,signal_ID ,data_pnts, graph:Graph):
+        """stores data points in graph and turns signal"""
+        new_signal = Signal(signal_ID, data_pnts)
+        graph.signals.append(new_signal)
         
-        #checks if the signal was running
-        if graph.timer.isActive(): graph.timer.stop()
-        
-        graph.series.clear()
-        graph.empty = True
-        graph.signal_plotting_started = False
-        graph.signal_curr_indx = True
-        graph.signal_curr_indx = 0
-        graph.play_pause_btn.setText = "play"
     
-    
-    @staticmethod        
-    def __unload_signal(graph:Graph):
-        """unloads the previous loaded signal(signal is no longer stored)\n
-        The signal can not be drawn again unless loaded\n
-        but does not delete the signal file"""
-        
-        if not graph.is_loaded:
-            print("Graph is empty")
-            return
-        
-        #stops plotting
-        if graph.timer.isActive():
-            graph.timer.stop()
-            
-        graph.series.clear()
-        graph.data_pnts=[]
-        graph.is_loaded = False
-        graph.signal_plotting_started = False
-        graph.empty = True
-        graph.signal_curr_indx = 0
-    
-        
-    @staticmethod
-    def is_graph_loaded(graph:Graph):
-        """checks if a graph has been loaded with a signal"""
-        return graph.is_loaded
-    
-    
-    @staticmethod
-    def is_graph_empty(graph:Graph):
-        return graph.empty
-    
-    
-    @staticmethod
-    def get_loaded_files(graph:Graph):
-        """returns a list of all csv files uploaded by the user"""
-        return graph.uploaded_files
-    
-    
-    @staticmethod
-    def get_active_file(graph:Graph):
-        """returns the file path of the current active file"""
-        return graph.active_file
-    
-    
-    @staticmethod
-    def toggle_play_pause_btn(graph:Graph):
+    def toggle_play_pause_btn(self, graph:Graph):
         """Cotrols playing and pausing\n
-        connected to play and pause button"""
-        if not graph.is_loaded: 
-            print("Graph is not loaded. Will play graph of active file if exists")
-            if graph.active_file:
-                GraphController.__load_signal(graph,graph.active_file)
-                GraphController.__play_loaded_signal(graph)
-            else:
-                print("please choose a file to be marked as active")
+        connected to play and pause button\n
+        this method is connected to play_loaded_signals method"""
+        
+        if graph.signals_counter == 0: 
+            print("Graph is empty. Add a signal first")
             return        
             
         if graph.timer.isActive():
             graph.timer.stop()
             graph.play_pause_btn.setText("play")
             
-        elif (not graph.timer.isActive()) and graph.signal_plotting_started==True:
-            graph.timer.start(graph.timer.interval())
-            graph.play_pause_btn.setText("pause")
-                
-        elif (not graph.timer.isActive()) and graph.empty:
-            GraphController.__play_loaded_signal(graph)
-            graph.play_pause_btn.setText("pause") 
-    
-    
-    @staticmethod
-    def replay_signal(graph:Graph,interval:int=5):
-        """connected with replay button"""
+        else:
+            if graph.active:
+                graph.timer.start(graph.timer.interval())
+                graph.play_pause_btn.setText("pause")
+            else:
+                graph.timer.start()
+                self.get_chart_ready(graph)    
+
+                    
+    def get_chart_ready(self, graph:Graph):
+        graph.chart.removeAllSeries()
+        graph.plotting_index = 0
         
-        #checks if thers is a signal being plotted
+        for _ in graph.signals:
+            series = QLineSeries()
+            graph.chart.addSeries(series)
+            
+        graph.chart.createDefaultAxes()
+        graph.timer.start()
+         
+    def plot_signals(self, graph:Graph):
+        all_signals_plotted = False
+        i = 0
+        graph.active = True
+        
+        while not all_signals_plotted:
+            signals_skipped_per_plotting_indx = 0
+            for signal in graph.signals:
+                if graph.plotting_index < len(signal.data_qpnts):
+                    signal_series = graph.chart.series()[i]
+                    if isinstance(signal_series, QLineSeries):
+                        signal_series.append(signal.data_qpnts[graph.plotting_index])
+                else : signals_skipped_per_plotting_indx+=1
+                i+=1
+            
+            if signals_skipped_per_plotting_indx == len(graph.signals):
+                all_signals_plotted = True        
+            else: graph.plotting_index+=1            
+                
+        graph.timer.stop()
+        graph.active = False
+    
+    def reset_graph(self,graph:Graph):
+        """Zeros the graph but the signals' files still exist.\n
+        Signals are still attached to the graph so they can be played again"""
+        
+        if graph.signals_counter == 0:
+            print("graph is already empty")
+            return
+        
+        #checks if the signal was running
         if graph.timer.isActive(): 
             graph.timer.stop()
-            GraphController.clear_signal(graph)
-        
-        #checks if no signal is loaded
-        if not GraphController.is_graph_loaded(graph):
-            print("Graph is not loaded")
-            print("Will replay signal of the current active file if exists")
-            if graph.active_file:
-                GraphController.__load_signal(graph,graph.active_file)
-            else: 
-                print("Please choose a file")
-                return
-        
-        GraphController.__play_loaded_signal(graph)
-
- 
-    @staticmethod
-    def increase_plotting_speed(graph:Graph):
-        """connected with + button"""
-        GraphController.__control_speed(graph,-(graph.delta_interval))
-    
-    
-    @staticmethod
-    def decrease_plotting_speed(graph:Graph):
-        """connected with - button"""
-        GraphController.__control_speed(graph, graph.delta_interval) 
-    
-
-    @staticmethod
-    def zoom_in(graph:Graph):
-        graph.chart_view.chart().zoomIn()
-    
-    
-    @staticmethod
-    def zoom_out(graph:Graph):
-        graph.chart_view.chart().zoomOut()
-    
-    
-    @staticmethod
-    def __play_loaded_signal(graph:Graph,interval:int =20):
-        """plots the signal of the active file\n
-        The interval controls the plotting speed.\n
-        smaller intervals correspond to faster plotting\n
-        """                  
-        graph.series.clear()
-        graph.signal_curr_indx=0
-        
-        graph.chart.setAxisX(graph.x_axis, graph.series)
-        graph.chart.setAxisY(graph.y_axis, graph.series)
-        
-        GraphController.__set_full_view_port(graph)
-                
-        graph.timer.timeout.connect(lambda: GraphController.__animate_signal(graph))
-        graph.timer.start(interval)
-        graph.signal_plotting_started = True
-        graph.empty = False
-        GraphController.__animate_signal(graph)
-        
-
-    @staticmethod
-    def __animate_signal(graph:Graph):
-        if graph.signal_curr_indx < len(graph.data_pnts):
-            graph.series.append(graph.data_pnts[graph.signal_curr_indx])
-            graph.signal_curr_indx += 1
         else:
-            graph.timer.stop()
-    
-    
-    @staticmethod
-    def __set_full_view_port(graph: Graph):
-        """Sets the view port to fit the whole signal in real time\n
-        No need for the user to pan the signal.
-        """
-        if not graph.data_pnts:
+            print("Graph is already idle")
             return
-
-        x_min = graph.data_pnts[0].x()
-        x_max = graph.data_pnts[-1].x()
-
-        y_values = [point.y() for point in graph.data_pnts]
-        y_min = min(y_values) if y_values else 0
-        y_max = max(y_values) if y_values else 0
-
-        graph.chart.axisX().setRange(x_min, x_max)
-        graph.chart.axisY().setRange(y_min, y_max)
+           
+        i = 0
+        for series in graph.chart.series():
+            if isinstance(series, QLineSeries):
+                series.clear()
         
+        graph.plotting_index = 0
+        graph.active = False
             
-    @staticmethod
-    def __control_speed(graph:Graph, delta_speed:int):
-        if (not graph.is_loaded) or graph.play_pause_btn.text=="play": return
+                
+    def replay_signal(self, graph:Graph,interval:int=5):
+        """connected with replay button"""
+        
+        if graph.signals_counter==0:
+            print("Graph is empty. Load a signal first")
+            return
+        
+        if graph.timer.isActive(): 
+            graph.timer.stop()
+            self.reset_graph(graph)
+        
+        self.get_chart_ready(graph)
+
+    def increase_plotting_speed(self, graph:Graph):
+        """connected with + button"""
+        self.__control_speed(graph,-(graph.delta_interval))
+    
+    def decrease_plotting_speed(self, graph:Graph):
+        """connected with - button"""
+        self.__control_speed(graph, graph.delta_interval)
+        
+    def __control_speed(self, graph:Graph, delta_speed:int):
+        if (graph.signals_counter==0) or graph.play_pause_btn.text=="play": return
         
         current_interval = graph.timer.interval()
         if delta_speed < 0 : # speed up 
             new_interval = min(graph.min_plotting_interval, current_interval+delta_speed)
         else : new_interval = max(graph.max_plotting_interval, current_interval+delta_speed)
-        graph.timer.setInterval(new_interval)
-        
-        
-    @staticmethod
-    def toggle_change_submit_name_btn(graph:Graph):
-        """connected to change graph name"""
-        if graph.name_label.isVisible():
-            graph.name_label.hide() 
-            graph.name_field.setText(graph.name)
-            graph.name_field.setFocus()
-            graph.name_field.show()
-            graph.change_submit_name_btn.setText("apply change")
-        else: GraphController.__change_graph_name(graph)    
+        graph.timer.setInterval(new_interval)         
+    
+    def zoom_in(self, graph:Graph):
+        graph.chart_view.chart().zoomIn()
+    
+    def zoom_out(self, graph:Graph):
+        graph.chart_view.chart().zoomOut()
     
     
-    @staticmethod
-    def __change_graph_name(graph:Graph):    
-            graph.name = graph.name_field.text()
-            graph.name_label.setText(graph.name)
-            graph.name_field.hide()
-            graph.name_label.show()
-            graph.change_submit_name_btn.setText("change graph name")
+                                   
