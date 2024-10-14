@@ -1,5 +1,4 @@
-from PySide6.QtWidgets import (QFileDialog)
-from PySide6.QtCharts import QLineSeries
+from PySide6.QtCharts import QLineSeries, QValueAxis
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QPen, QColor
 import sys
@@ -70,8 +69,7 @@ class GraphController:
                     break
                 else: return                
                 
-    
-    
+        
     def toggle_play_pause_btn(self, graph:Graph):
         """Cotrols playing and pausing\n
         connected to play and pause button\n
@@ -106,6 +104,31 @@ class GraphController:
             graph.chart.addSeries(series)
             
         graph.chart.createDefaultAxes()
+        self.set_full_view_port(graph)
+        
+        
+    def set_full_view_port(self, graph:Graph):
+        if not graph.signals: return 
+        
+        all_x = [qpoint.x() for signal in graph.signals for qpoint in signal.data_qpnts]
+        all_y = [qpoint.y() for signal in graph.signals for qpoint in signal.data_qpnts]        
+    
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        
+        axis_x = QValueAxis()
+        axis_y = QValueAxis()
+        
+        axis_x.setRange(min_x, max_x)
+        axis_y.setRange(min_y, max_y)
+        
+        graph.chart.setAxisX(axis_x)
+        graph.chart.setAxisY(axis_y)        
+      
+        for series in graph.chart.series():
+            series.attachAxis(axis_x)
+            series.attachAxis(axis_y)    
+        
          
     def plot_signals(self, graph:Graph):
         all_signals_data_pnts_plotted = True
