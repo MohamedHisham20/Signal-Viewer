@@ -1,3 +1,4 @@
+import random
 import sys
 import numpy as np
 import pandas as pd
@@ -88,6 +89,7 @@ class RadarGraph(QWidget):
             scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
             x = self.width() // 2 + scaled_distance * np.cos(np.radians(point_angle))
             y = self.height() // 2 - scaled_distance * np.sin(np.radians(point_angle))
+
             self.hit_points.append((int(x), int(y)))
 
         # Update remaining points
@@ -104,6 +106,8 @@ class RadarGraph(QWidget):
 
             if point_angle > self.radar_angle:
                 self.hit_points.remove(point)
+
+                self.remaining_points.append((1, point_angle))
 
         self.update()
 
