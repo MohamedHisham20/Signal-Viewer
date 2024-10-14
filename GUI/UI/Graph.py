@@ -52,4 +52,3 @@ class Graph(QWidget):
         
         self.graph_layout.addWidget(self.graph_controls)
         self.graph_layout.addWidget(self.chart_view)
-                                        

@@ -1,11 +1,11 @@
 from PySide6.QtWidgets import (QFileDialog)
 from PySide6.QtCharts import QLineSeries
+from PySide6.QtCore import QPointF
 import sys
 import csv
 import os
 
-
-from GUI.Graph import Graph
+from GUI.UI.Graph import Graph
 from GUI.Signal import Signal
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))              
 
