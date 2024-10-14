@@ -15,13 +15,13 @@ class ControlsWidget(QWidget):
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
 
         self.ui.glue_btn.clicked.connect(self.show_glue_popup)
-        self.ui.glue_btn.setEnabled(True)  # Set enabled when signals are selected
+        self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
 
     def show_signal_list_context_menu(self, position):
         menu = QMenu(self)
         add_to_submenu = QMenu("Add to", self)
 
-        main_window = self.parent().parent().parent().parent()  # This is sooo wrong omg
+        main_window = self.parent().parent().parent().parent()  # This is so wrong, but necessary to get the graph names
         add_to_graph = []
         if hasattr(main_window, 'graphs'):
             for graph in main_window.graphs:
@@ -39,5 +39,5 @@ class ControlsWidget(QWidget):
     def show_glue_popup(self):
         signal1 = [[0, 0], [2, 3], [10, 4]]
         signal2 = [[1, 5], [2, 6], [3, 7]]
-        glue_popup = Glue_popup.GlueSignalsWindow(signal1, signal2, None, self)
+        glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
         glue_popup.exec()
