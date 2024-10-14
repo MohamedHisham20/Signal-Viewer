@@ -36,6 +36,10 @@ class GraphWindow(QWidget):
         self.report_button = QPushButton("Generate Report")
         self.report_button.clicked.connect(self.open_report_window)
 
+        # Use another graph to show another signal
+        self.new_graph_button = QPushButton("New Graph")
+        self.new_graph_button.clicked.connect(self.show_new_graph)
+
         # Layout for cropping inputs
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.start_label)
@@ -43,54 +47,77 @@ class GraphWindow(QWidget):
         input_layout.addWidget(self.end_label)
         input_layout.addWidget(self.end_input)
         input_layout.addWidget(self.crop_button)
+        input_layout.addWidget(self.new_graph_button)
 
         # Add input layout and report button to main layout
         self.layout.addLayout(input_layout)
         self.layout.addWidget(self.report_button)
 
         self.setLayout(self.layout)
-        self.cropped_data = []
+
+        # Store all graphs and cropped data
+        self.graphs = [self.graph_widget]
+        self.all_data = [self.data]
+        self.all_cropped_data = [[]]  # To store cropped data for each graph
+
+    def show_new_graph(self):
+        """Add a new graph with random data and store it."""
+        new_data = np.random.randn(100)
+        new_graph_widget = pg.PlotWidget()
+
+        # Plot the new data on the new graph
+        new_graph_widget.plot(new_data, pen='b')
+
+        # Store new graph widget and data
+        self.graphs.append(new_graph_widget)
+        self.all_data.append(new_data)
+        self.all_cropped_data.append([])
+
+        # Add the new graph to the layout
+        self.layout.addWidget(new_graph_widget)
 
     def crop_graph_and_save(self):
-        """Crop the graph based on start and end inputs."""
+        """Crop the selected graph based on start and end inputs."""
         try:
             start = int(self.start_input.text())
             end = int(self.end_input.text())
+            current_graph_index = len(self.graphs) - 1  # Get the current graph index
 
-            if start < 0 or end >= len(self.data) or start >= end:
+            if start < 0 or end >= len(self.all_data[current_graph_index]) or start >= end:
                 raise ValueError("Invalid crop range")
 
-            # Crop the data
-            self.cropped_data.append(self.data[start:end].tolist())
+            # Crop the data for the current graph
+            cropped_data = self.all_data[current_graph_index][start:end]
+            self.all_cropped_data[current_graph_index].append(cropped_data.tolist())
 
-            # Update plot to show only the cropped data
-            self.graph_widget.clear()
-            self.graph_widget.plot(self.cropped_data[-1][:], pen='r')
+            # Update the current graph to show only the cropped data
+            self.graphs[current_graph_index].clear()
+            self.graphs[current_graph_index].plot(cropped_data, pen='r')
 
-            print(f"Cropped data from {start} to {end}")
+            print(f"Cropped data from {start} to {end} for graph {current_graph_index + 1}")
         except Exception as e:
             print(f"Error: {e}")
 
     def open_report_window(self):
         """Open a window to write and generate a report."""
-        if self.cropped_data is None:
+        if all(not data for data in self.all_cropped_data):
             print("No data to generate report.")
             return
 
-        self.report_window = ReportWindow(self.cropped_data)
+        self.report_window = ReportWindow(self.all_cropped_data)
         self.report_window.show()
 
 
 class ReportWindow(QDialog):
-    def __init__(self, cropped_data):
+    def __init__(self, all_cropped_data):
         super().__init__()
         self.setWindowTitle("Generate Report")
 
         # Limit window size to a quarter of the screen
         self.setGeometry(200, 200, 600, 500)
-        self.setMinimumSize(400, 300)  # Allow resizing, but limit the minimum size
+        self.setMinimumSize(400, 300)
 
-        self.cropped_data = cropped_data  # Data passed from the main window
+        self.all_cropped_data = all_cropped_data  # Data passed from the main window
 
         # Create a layout and text area for writing the report
         layout = QVBoxLayout()
@@ -104,12 +131,13 @@ class ReportWindow(QDialog):
 
         # Display the cropped data as graphs
         self.graph_widgets = []
-        for idx, data in enumerate(self.cropped_data):
-            graph_widget = pg.PlotWidget(self)
-            graph_widget.plot(data, pen='r')
-            graph_widget.setFixedHeight(150)  # Set smaller height for each graph
-            self.graph_widgets.append(graph_widget)
-            layout.addWidget(graph_widget)
+        for graph_data in self.all_cropped_data:
+            for cropped_data in graph_data:
+                graph_widget = pg.PlotWidget(self)
+                graph_widget.plot(cropped_data, pen='r')
+                graph_widget.setFixedHeight(150)  # Set smaller height for each graph
+                self.graph_widgets.append(graph_widget)
+                layout.addWidget(graph_widget)
 
         # Button to save the report
         save_button = QPushButton("Save Report")
