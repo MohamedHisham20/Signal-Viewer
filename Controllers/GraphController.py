@@ -1,8 +1,5 @@
-from PySide6.QtWidgets import (QFileDialog)
 from PySide6.QtCharts import QLineSeries
-from PySide6.QtCore import QPointF
 import sys
-import csv
 import os
 
 from GUI.UI.Graph import Graph
@@ -34,14 +31,17 @@ class GraphController:
         graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph))
             
     
-    def get_number_of_signals_in_graph(self,graph:Graph):    
+    def get_number_of_signals_in_graph(self,graph:Graph):
         return graph.signals_counter
     
     
-    def add_signal_to_graph(self,signal_ID ,data_pnts, graph:Graph):
+    def add_signal_to_graph(self, signal, graph:Graph):
         """stores data points in graph and turns signal"""
-        new_signal = Signal(signal_ID, data_pnts)
-        graph.signals.append(new_signal)
+        graph.signals.append(signal)
+        graph.signals_counter += 1
+
+        if graph.signals_counter == 1:
+            graph.timer.timeout.connect(lambda:self.plot_signals(graph))
         
     
     def toggle_play_pause_btn(self, graph:Graph):

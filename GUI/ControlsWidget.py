@@ -1,10 +1,8 @@
 from PySide6.QtWidgets import QWidget, QMenu
 from PySide6.QtCore import Qt
-import numpy as np
 
 from GUI.UI.UI_controls_widget import Ui_Controls_Widget
 from Controllers.GlueController import GlueController
-import Glue_popup
 
 
 class ControlsWidget(QWidget):
@@ -12,21 +10,25 @@ class ControlsWidget(QWidget):
         super().__init__(parent)
         self.ui = Ui_Controls_Widget()
         self.ui.setupUi(self)
-        self.root = parent
+        self.root_widget = self.parent()
+        print(self.root_widget)
+        self.signals = []
         self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
 
-        self.ui.glue_btn.clicked.connect(self.show_glue_popup)
         self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
 
     def show_signal_list_context_menu(self, position):
+        item = self.ui.signals_list_widget.itemAt(position)
+        if item is None:
+            self.show_add_signal_context_menu(position)
+
         menu = QMenu(self)
         add_to_submenu = QMenu("Add to", self)
 
-        main_window = self.parent().parent().parent().parent()  # This is so wrong, but necessary to get the graph names
         add_to_graph = []
-        if hasattr(main_window, 'graphs'):
-            for graph in main_window.graphs:
+        if hasattr(self.root_widget, 'graphs'):
+            for graph in self.root_widget.graphs:
                 graph_title = graph.ui.graph_title_lbl.text()
                 add_to_graph.append(add_to_submenu.addAction(graph_title))
 
@@ -36,13 +38,22 @@ class ControlsWidget(QWidget):
         report = menu.addAction("Report")
         remove = menu.addAction("Remove")
 
-        menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
+        action = menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
 
-    def show_glue_popup(self):
-        # signal1 = [[0, 0], [1, 3], [2, 4]]
-        # signal2 = [[0, 5], [1, 6], [2, 7]]
-        # sinusoidal signals
-        signal1 = [[i, 5 * np.sin(i)] for i in range(5)]
-        signal2 = [[i, 5 * np.cos(i)] for i in range(5)]
-        glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
-        glue_popup.exec()
+        if action in add_to_graph:
+            for graph in self.root_widget.graphs:
+                if graph.ui.graph_title_lbl.text() == action.text():
+                    graph.add_signal(self.signals[self.ui.signals_list_widget.currentRow()])
+
+    def show_add_signal_context_menu(self, position):
+        menu = QMenu(self)
+        from_file = menu.addAction("Add Signal from File")
+        from_web = menu.addAction("Add Signal from Web")
+        action = menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
+
+        if action == from_file:
+            self.root_widget.load_signal()
+
+    def add_signal(self, signal):
+        self.signals.append(signal)
+        self.ui.signals_list_widget.addItem(signal.ID)

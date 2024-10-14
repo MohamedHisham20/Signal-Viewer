@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1100</width>
-    <height>342</height>
+    <width>1099</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>336</height>
+    <height>450</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -25,8 +25,14 @@
      <x>10</x>
      <y>0</y>
      <width>1081</width>
-     <height>331</height>
+     <height>450</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>450</height>
+    </size>
    </property>
    <property name="frameShape">
     <enum>QFrame::Shape::StyledPanel</enum>
@@ -38,7 +44,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>160</y>
+      <y>230</y>
       <width>24</width>
       <height>24</height>
      </rect>
@@ -64,9 +70,21 @@
      <rect>
       <x>50</x>
       <y>10</y>
-      <width>1051</width>
-      <height>261</height>
+      <width>1020</width>
+      <height>380</height>
      </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>0</width>
+      <height>380</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>380</height>
+     </size>
     </property>
     <widget class="QWidget" name="verticalLayoutWidget">
      <property name="geometry">
@@ -74,7 +92,7 @@
        <x>-1</x>
        <y>-1</y>
        <width>1051</width>
-       <height>261</height>
+       <height>381</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout"/>
@@ -84,7 +102,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>290</y>
+      <y>400</y>
       <width>321</width>
       <height>32</height>
      </rect>
@@ -196,7 +214,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>280</y>
+      <y>390</y>
       <width>201</width>
       <height>41</height>
      </rect>

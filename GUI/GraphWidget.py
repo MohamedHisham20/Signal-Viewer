@@ -16,7 +16,7 @@ class GraphWidget(QWidget):
         self.ui = Ui_graph_widget()
         self.ui.setupUi(self)
         self.initial_position = None
-        self.playing_state = True
+        self.playing_state = False
         self.play_icon = QIcon('./Icons/play.png')
         self.pause_icon = QIcon('./Icons/pause.png')
         self.ChangeOrder = 'no'
@@ -47,6 +47,7 @@ class GraphWidget(QWidget):
         # self.ui.end_btn.clicked.connect(lambda: self.graphController.pan_to_end(self.graph))
 
     def show_context_menu(self, position):
+        root_widget = self.parent().parent().parent().parent().parent().parent()
         menu = QMenu(self)
         change_title = menu.addAction("Change Title")
         menu.addSeparator()
@@ -66,7 +67,7 @@ class GraphWidget(QWidget):
 
         remove = menu.addAction("Remove Graph")
 
-        if self.graph.signals_counter==0:
+        if self.graph.signals_counter == 0:
             pause_play.setEnabled(False)
             speed_up.setEnabled(False)
             slow_down.setEnabled(False)
@@ -78,8 +79,8 @@ class GraphWidget(QWidget):
         if action == change_title:
             self.ui.graph_title_lbl.setFocus()
         elif action == signal_from_file:
-            self.graphController.upload_signal_file(self.graph)
-            self.enable_controls()
+            signal = root_widget.load_signal()
+            self.add_signal(signal)
         elif action == signal_from_web:
             pass
         elif action == pause_play:
@@ -166,3 +167,8 @@ class GraphWidget(QWidget):
         self.ui.end_btn.setEnabled(True)
         self.ui.fast_forward_btn.setEnabled(True)
         self.ui.fast_backward_btn.setEnabled(True)
+
+    def add_signal(self, signal):
+        self.graphController.add_signal_to_graph(signal, self.graph)
+        self.enable_controls()
+        self.toggle_pause_play()

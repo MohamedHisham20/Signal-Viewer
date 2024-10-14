@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 
 from GUI.UI.UI_root_widget import Ui_root_widget
 from GUI.GraphWidget import GraphWidget
 from GUI.ControlsWidget import ControlsWidget
-from PySide6.QtCore import Qt
+from GUI.Signal import Signal
+import Glue_popup
 
 class RootWidget(QWidget):
     def __init__(self):
@@ -15,6 +16,7 @@ class RootWidget(QWidget):
         self.graphs = []
         
         self.controls_widget = ControlsWidget(self)
+        self.controls_widget.ui.glue_btn.clicked.connect(self.show_glue_popup)
 
         controls_placeholder_widget = self.ui.controls_widget
         if controls_placeholder_widget.layout() is None:
@@ -78,3 +80,18 @@ class RootWidget(QWidget):
             elif graph.ChangeOrder == 'down':
                 self.swapwithlowergraph(graph)
                 graph.ChangeOrder = 'no'
+
+    def load_signal(self):
+        file_path, _ = QFileDialog.getOpenFileName(None, "Open Signal File", "", "CSV Files (*.csv);;All Files (*)")
+        signal = Signal.from_file(file_path)
+        self.controls_widget.add_signal(signal)
+        return signal
+
+    def show_glue_popup(self):
+        # signal1 = [[0, 0], [1, 3], [2, 4]]
+        # signal2 = [[0, 5], [1, 6], [2, 7]]
+        # sinusoidal signals
+        signal1 = [[i, 5 * np.sin(i)] for i in range(5)]
+        signal2 = [[i, 5 * np.cos(i)] for i in range(5)]
+        glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
+        glue_popup.exec()

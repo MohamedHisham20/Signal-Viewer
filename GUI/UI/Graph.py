@@ -11,6 +11,7 @@ class Graph(QWidget):
         
         super().__init__()
         self.graph_layout = QVBoxLayout(self)
+        self.setMinimumHeight(400)
         
         #Graph states       
         self.plotting_index = 0
@@ -18,15 +19,15 @@ class Graph(QWidget):
         self.active = False
         
         #Container for graph controls
-        self.graph_controls = QWidget(self)
-        self.graph_controls_layout = QHBoxLayout(self.graph_controls)
-        self.play_pause_btn = QPushButton("play",self)
-        self.replay_btn = QPushButton("replay",self)
-        self.zoom_in_btn = QPushButton("zoom in",self)
-        self.zoom_out_btn = QPushButton("zoom out",self)
-        self.speed_up_btn = QPushButton("speed up",self)
-        self.slow_down_btn = QPushButton("slow down",self)
-        self.reset_btn = QPushButton("reset",self)   
+        # self.graph_controls = QWidget(self)
+        # self.graph_controls_layout = QHBoxLayout(self.graph_controls)
+        # self.play_pause_btn = QPushButton("play",self)
+        # self.replay_btn = QPushButton("replay",self)
+        # self.zoom_in_btn = QPushButton("zoom in",self)
+        # self.zoom_out_btn = QPushButton("zoom out",self)
+        # self.speed_up_btn = QPushButton("speed up",self)
+        # self.slow_down_btn = QPushButton("slow down",self)
+        # self.reset_btn = QPushButton("reset",self)
         
         #Chart Setup;
         self.chart = QChart()
@@ -42,13 +43,13 @@ class Graph(QWidget):
         self.signals: List[Signal] = []
                 
         #Layout setup
-        self.graph_controls_layout.addWidget(self.play_pause_btn)
-        self.graph_controls_layout.addWidget(self.replay_btn)
-        self.graph_controls_layout.addWidget(self.reset_btn)
-        self.graph_controls_layout.addWidget(self.zoom_in_btn)
-        self.graph_controls_layout.addWidget(self.zoom_out_btn)
-        self.graph_controls_layout.addWidget(self.speed_up_btn)
-        self.graph_controls_layout.addWidget(self.slow_down_btn)
+        # self.graph_controls_layout.addWidget(self.play_pause_btn)
+        # self.graph_controls_layout.addWidget(self.replay_btn)
+        # self.graph_controls_layout.addWidget(self.reset_btn)
+        # self.graph_controls_layout.addWidget(self.zoom_in_btn)
+        # self.graph_controls_layout.addWidget(self.zoom_out_btn)
+        # self.graph_controls_layout.addWidget(self.speed_up_btn)
+        # self.graph_controls_layout.addWidget(self.slow_down_btn)
         
-        self.graph_layout.addWidget(self.graph_controls)
+        # self.graph_layout.addWidget(self.graph_controls)
         self.graph_layout.addWidget(self.chart_view)
