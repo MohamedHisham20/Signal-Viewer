@@ -43,6 +43,24 @@ class GraphController:
             print("File does not exist already")
             return
         graph.uploaded_files.remove(file_path)
+
+    def load_signal_fromNP(graph:Graph,signal):
+        """Loads the signal data points into graph\n
+        """
+        if GraphController.is_graph_loaded(graph):
+            GraphController.unload_signal(graph)
+         
+        try:
+            for row in signal:
+                x, y = float(row[0]), float(row[1])
+                pnt = QPointF(x,y)
+                graph.data_pnts.append(pnt)
+            graph.is_loaded =True    
+        except Exception as e:
+            print(f"An error occurred while reading the file: {e}")
+        
+        GraphController.__play_loaded_signal(graph,interval=100)
+        graph.signal_is_running = True
     
     
     @staticmethod

@@ -78,28 +78,3 @@ class RootWidget(QWidget):
             elif graph.ChangeOrder == 'down':
                 self.swapwithlowergraph(graph)
                 graph.ChangeOrder = 'no'
-
-    # Reordering doesn't work :(
-    # def dragEnterEvent(self, event):
-    #     if event.mimeData().hasText():
-    #         event.acceptProposedAction()
-    #
-    # def dropEvent(self, event):
-    #     if event.mimeData().hasText():
-    #         print("here")
-    #         widget_name = event.mimeData().text()
-    #         graph = None
-    #         for graph in self.graphs:
-    #             if graph.objectName() == widget_name:
-    #                 self.graphs.remove(graph)
-    #                 break
-    #
-    #         layout = self.ui.graph_placeholder_widget.layout()
-    #         for i in range(layout.count()):
-    #             _widget = layout.itemAt(i).widget()
-    #             if _widget is graph:
-    #                 layout.removeWidget(graph)
-    #                 layout.addWidget(graph, i)
-    #                 break
-    #
-    #         event.acceptProposedAction()

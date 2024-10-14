@@ -1,7 +1,9 @@
 from PySide6.QtWidgets import QWidget, QMenu
 from PySide6.QtCore import Qt
+import numpy as np
 
 from GUI.UI.UI_controls_widget import Ui_Controls_Widget
+from Controllers.GlueController import GlueController
 import Glue_popup
 
 
@@ -10,7 +12,7 @@ class ControlsWidget(QWidget):
         super().__init__(parent)
         self.ui = Ui_Controls_Widget()
         self.ui.setupUi(self)
-
+        self.root = parent
         self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
 
@@ -37,7 +39,10 @@ class ControlsWidget(QWidget):
         menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
 
     def show_glue_popup(self):
-        signal1 = [[0, 0], [2, 3], [10, 4]]
-        signal2 = [[1, 5], [2, 6], [3, 7]]
+        # signal1 = [[0, 0], [1, 3], [2, 4]]
+        # signal2 = [[0, 5], [1, 6], [2, 7]]
+        # sinusoidal signals
+        signal1 = [[i, 5 * np.sin(i)] for i in range(5)]
+        signal2 = [[i, 5 * np.cos(i)] for i in range(5)]
         glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
         glue_popup.exec()

@@ -1,7 +1,10 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QSlider, QLabel, QComboBox, QCheckBox, QFrame
 from PySide6.QtCore import Qt
+import numpy as np
 from pyqtgraph import PlotWidget
-
+from Controllers.GlueController import GlueController
+from GUI.GraphWidget import GraphWidget
+from Controllers.GraphController import GraphController
 
 class GlueSignalsPopup(QDialog):
     def __init__(self, signal1, signal2, glue_function, report_function, parent=None):
@@ -14,6 +17,7 @@ class GlueSignalsPopup(QDialog):
         self.report_function = report_function
         self.slider1_initial_value = None
         self.slider2_initial_value = None
+        self.control = parent
 
         self.interpolation_methods = {
             "Linear": 1,
@@ -57,7 +61,7 @@ class GlueSignalsPopup(QDialog):
         self.interpolation_order_combo = QComboBox(self)
         self.interpolation_order_combo.addItems(self.interpolation_methods.keys())
         layout.addWidget(self.interpolation_order_combo)
-
+        self.interpolation_order_combo.setCurrentIndex(0)
         divider = QFrame(self)
         divider.setFrameShape(QFrame.HLine)
         divider.setFrameShadow(QFrame.Sunken)
@@ -102,10 +106,34 @@ class GlueSignalsPopup(QDialog):
 
     def glue_signals(self):
         interpolation_order = self.interpolation_methods[self.interpolation_order_combo.currentText()]
+        self.adjusted_signal1 = np.array(self.adjusted_signal1)
+        self.adjusted_signal2 = np.array(self.adjusted_signal2)
+        signal1X = self.adjusted_signal1
+        signal2X = self.adjusted_signal2
+        #convert to np
 
-        self.glue_function(self.adjusted_signal1, self.adjusted_signal2, interpolation_order)
+        calculated_overlap = self.adjusted_signal1[-1][0] - self.adjusted_signal2[0][0]
+        print("calculated overlap", calculated_overlap)
+        # self.glue_function(self.adjusted_signal1, self.adjusted_signal2, interpolation_order)
+        print("interpolation order" , interpolation_order)
+        glued_signal = GlueController.InterPolate_signals(
+            signal1X,
+            signal2X,
+            interpolation_order,
+            calculated_overlap
+        )
 
-        if self.generate_report_checkbox.isChecked():
-            self.report_function(self.adjusted_signal1, self.adjusted_signal2, interpolation_order)
 
+        self.plot_widget.plot(glued_signal, pen='g')
+        self.add_signal(self.control.root, glued_signal)
         self.accept()
+
+    @staticmethod
+    def add_signal(root , glued_signal):
+        graph_widget = GraphWidget(root)
+        graph_widget.swapAction = root.swap
+        root.graphs.append(graph_widget)
+        root.ui.graph_placeholder_widget.layout().addWidget(graph_widget)
+        GraphController.load_signal_fromNP(graph_widget.graph, glued_signal)
+        
+    

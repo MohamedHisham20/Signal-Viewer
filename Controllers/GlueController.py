@@ -6,50 +6,13 @@ import csv
 import requests
 from io import StringIO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from GUI.glueWindow import glueWindow
+
 from GUI.UI.Graph import Graph
 from PySide6.QtCore import QPointF 
 class GlueController:
     def __init__(self):
-        self.signals = [np.linspace(0,1,100),np.linspace(0,1,100)]
-        self.signal1=self.signals[0]
-        self.signal2=self.signals[1]
-        self.order=1
-        self.overlap=0
-        self.signal1_start=0
-        self.signal2_start=0
-        self.signal1_size=100
-        self.signal2_size=100
-    def setdefaults(self,window : glueWindow):
-        window.comboBox_signal1.addItems(["signal1","signal2"])
-        window.comboBox_signal2.addItems(["signal1","signal2"])
-        window.spinBox_order.setValue(1)
-        window.spinBox_overlap.setValue(0)
-        window.spinBox_start1.setValue(0)
-        window.spinBox_start2.setValue(0)
-        window.spinBox_size1.setValue(100)
-        window.spinBox_size2.setValue(100)
-    
-    def ComboBox_signal1(self,window : glueWindow):
-        self.signal1 = self.signals[window.comboBox_signal1.currentIndex()]
-    def ComboBox_signal2(self,window : glueWindow):
-        self.signal2 = self.signals[window.comboBox_signal2.currentIndex()]
-    def SpinBox_start1(self,window : glueWindow):
-        self.signal1_start = window.spinBox_start1.value()
-    def SpinBox_start2(self,window : glueWindow):
-        self.signal2_start = window.spinBox_start2.value()
-    def SpinBox_size1(self,window : glueWindow):
-        self.signal1_size = window.spinBox_size1.value()
-    def SpinBox_size2(self,window : glueWindow):
-        self.signal2_size = window.spinBox_size2.value()
-    def SpinBox_overlap(self,window : glueWindow):
-        self.overlap = window.spinBox_overlap.value()
-    def SpinBox_order(self,window : glueWindow):
-        self.order = window.spinBox_order.value()
-    def is_make_report(self,window : glueWindow):
-        if window.checkBox.isChecked():
-            return True
-        return False
+        pass
+  
     @staticmethod
     def real_time_signal():
         url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo&datatype=csv"
@@ -73,30 +36,28 @@ class GlueController:
                 graphs[i].data_pnts.append(pnt)  
         return graphs
 
-    def InterPolate_signals(self,
-    signal1,
-    signal2,
-    order,
-    overlap,
-    signal1_start,
-    signal2_start ,
-    signal1_size,
-    signal2_size):
-    
-        signal1 = signal1[signal1_start:signal1_start+signal1_size]
-        signal2 = signal2[signal2_start:signal2_start+signal2_size]
-
-        signal1_normlized = np.linspace(0,1,signal1) 
-        signal2_normlized = np.linspace(0,1,signal2)
-        x_values_glued = np.empty()
+    @staticmethod
+    def InterPolate_signals(signal1, signal2, order, overlap):
+        kinds = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
+        order =int(order)
+        order = kinds[order]
+        overlap = int(overlap)        
+        signal1 = np.array(signal1)
+        signal2 = np.array(signal2)
+        signal1_normalized = np.linspace(0, 1, len(signal1)) 
+        signal2_normalized = np.linspace(0, 1, len(signal2))
         if overlap > 0:
-            x_values_glued = np.linspace(signal1_normlized[-1],signal2_normlized[0],overlap)
-        else: 
-            x_values_glued = np.linspace(signal1_normlized[-overlap],signal2_normlized[overlap], -overlap)
-
-        predict1 = interpolate.interp1d(signal1_normlized,signal1,kind=order)
-        predict2 = interpolate.interp1d(signal2_normlized,signal2,kind=order)
-        signal_glued = predict1(x_values_glued) + predict2(x_values_glued)
-        concatenated_signal = np.concatenate((signal1,signal_glued,signal2))
-
+            predict1 = interpolate.interp1d(signal1_normalized, signal1, kind =order, axis=0)
+            predict2 = interpolate.interp1d(signal2_normalized, signal2, kind =order,axis=0)
+            overlap_x = np.linspace(0, 1, overlap)
+            weights1 = np.linspace(1, 0, overlap)  
+            weights2 = np.linspace(0, 1, overlap)  
+            overlap_section = weights1[:, None] * predict1(overlap_x) + weights2[:, None] * predict2(overlap_x)
+            concatenated_signal = np.concatenate((signal1, overlap_section, signal2[overlap:]))
+            concatenated_signal = np.unique(concatenated_signal, axis=0)
+        else:
+            x_values_glued = np.linspace(signal1[-1, 0], signal2[0, 0], -overlap)
+            y_values_glued = np.linspace(signal1[-1, 1], signal2[0, 1], -overlap)
+            glue_section = np.column_stack((x_values_glued, y_values_glued))
+            concatenated_signal = np.concatenate((signal1, glue_section, signal2))
         return concatenated_signal
