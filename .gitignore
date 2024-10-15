@@ -18,3 +18,4 @@ GUI/Root-Widget/Root-Widget.pyproject.user
 GUI/graph_widget/.qtcreator/
 GUI/graph_widget/graph_widget.pyproject
 GUI/graph_widget/graph_widget.pyproject.user
+sin_generator.py
