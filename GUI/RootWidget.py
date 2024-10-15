@@ -97,11 +97,9 @@ class RootWidget(QWidget):
         return signal
 
     def show_glue_popup(self):
-        # signal1 = [[0, 0], [1, 3], [2, 4]]
-        # signal2 = [[0, 5], [1, 6], [2, 7]]
-        # sinusoidal signals
-        signal1 = [[i, 5 * np.sin(i)] for i in range(5)]
-        signal2 = [[i, 5 * np.cos(i)] for i in range(5)]
+        self.controls_widget.glues
+        signal1 = self.controls_widget.glues[0].data_pnts
+        signal2 = self.controls_widget.glues[1].data_pnts
         glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
         glue_popup.exec()
 

@@ -37,7 +37,7 @@ class Graph(QWidget):
         self.x_axis = QValueAxis()
         self.y_axis = QValueAxis()
         self.timer = QTimer()
-        self.delta_interval = 0.2 #default change in timer interval
+        self.delta_interval = 5 #default change in timer interval
         self.min_plotting_interval = 5 # corresponds to fastest plotting
         self.max_plotting_interval = 50 # corresponds to slowest plotting
         self.signals: List[Signal] = []
