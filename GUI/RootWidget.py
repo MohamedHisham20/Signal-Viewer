@@ -17,9 +17,9 @@ class RootWidget(QWidget):
         
         self.graphs = []
         
-        self.controls_widget = ControlsWidget(self)
-        self.controls_widget.ui.glue_btn.clicked.connect(self.show_glue_popup)
         self.non_rect_graph = NonRectGraph(self)
+        self.controls_widget = ControlsWidget(self, self.non_rect_graph)
+        self.controls_widget.ui.glue_btn.clicked.connect(self.show_glue_popup)
 
         controls_placeholder_widget = self.ui.controls_widget
         if controls_placeholder_widget.layout() is None:

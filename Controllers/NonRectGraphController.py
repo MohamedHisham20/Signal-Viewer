@@ -226,4 +226,5 @@ class NonRectGraph(QFrame):
         """" get a signal object passed from the main window and load the y axis"""
         y_values = signal.get_y_values()
         self.radar_widget.load_y_axis(y_values, signal.label)
+    
 

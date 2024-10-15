@@ -1,6 +1,7 @@
 Controllers/__pycache__/
 __pycache__/
 venv/
+.vs/
 test/
 test.py
 .DS_Store
