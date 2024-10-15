@@ -1,15 +1,14 @@
-import random
-import sys
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QScrollBar, QHBoxLayout, QFileDialog
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QPainter, QPen
+from PySide6.QtWidgets import QVBoxLayout, QPushButton, QScrollBar, QHBoxLayout, QFileDialog, QFrame
 
-class RadarGraph(QWidget):
+
+class RadarGraph(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(400, 400)
+        # self.setMinimumSize(400, 400)
         self.radius = 100  # Radar circle radius (relative value, actual will scale)
         self.data = np.array([])  # To hold the loaded signal data in angles (0 to 360 degrees)
         self.radar_angle = 0  # The starting angle for the radar line
@@ -28,7 +27,8 @@ class RadarGraph(QWidget):
         try:
             data = pd.read_csv(file_path)
             # Scale the signal values to fit within 360 degrees
-            scaled_data = (data["hart"].values - np.min(data["hart"].values)) / (np.max(data["hart"].values) - np.min(data["hart"].values)) * 360
+            scaled_data = (data["hart"].values - np.min(data["hart"].values)) / (
+                        np.max(data["hart"].values) - np.min(data["hart"].values)) * 360
             self.data = scaled_data
             self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
         except Exception as e:
@@ -125,7 +125,8 @@ class RadarGraph(QWidget):
         # Draw the radar base (a circle)
         qp.setPen(QPen(Qt.black, 2))
         qp.setBrush(Qt.black)
-        qp.drawEllipse(center_x - radar_radius, center_y - radar_radius, radar_radius * 2, radar_radius * 2)  # Radar base
+        qp.drawEllipse(center_x - radar_radius, center_y - radar_radius, radar_radius * 2,
+                       radar_radius * 2)  # Radar base
 
         # Draw the radar sweep (rotating line)
         qp.setPen(QPen(Qt.red, 2))
@@ -139,22 +140,18 @@ class RadarGraph(QWidget):
         if len(self.hit_points) > 1:
             qp.setPen(QPen(Qt.blue, 2))
             for i in range(1, len(self.hit_points)):
-                qp.drawLine(self.hit_points[i - 1][0], self.hit_points[i - 1][1], self.hit_points[i][0], self.hit_points[i][1])
+                qp.drawLine(self.hit_points[i - 1][0], self.hit_points[i - 1][1], self.hit_points[i][0],
+                            self.hit_points[i][1])
 
         # Draw the radar target points that have been hit
         qp.setPen(QPen(Qt.green, 6))
         for point in self.hit_points:
             qp.drawPoint(*point)
 
-        self.update()
 
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Radar Graph with CSV Signal Data")
+class NonRectGraph(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         # Create radar graph widget
         self.radar_widget = RadarGraph()
@@ -188,10 +185,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(controls_layout)
         layout.addWidget(self.scroll_bar)
 
-        # Set a central widget with layout
-        central_widget = QWidget()
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
+        self.setLayout(layout)
 
     def play_radar(self):
         """Resume radar rotation."""
@@ -210,14 +204,3 @@ class MainWindow(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load CSV", "", "CSV Files (*.csv)")
         if file_path:
             self.radar_widget.load_data_from_csv(file_path)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    # Create the main window and show it
-    main_window = MainWindow()
-    main_window.show()
-
-    # Start the Qt event loop
-    sys.exit(app.exec_())

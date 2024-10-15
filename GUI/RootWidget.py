@@ -4,6 +4,7 @@ from GUI.UI.UI_root_widget import Ui_root_widget
 from GUI.GraphWidget import GraphWidget
 from GUI.ControlsWidget import ControlsWidget
 from GUI.Signal import Signal
+from Controllers.NonRectGraphController import NonRectGraph
 import Glue_popup
 
 class RootWidget(QWidget):
@@ -17,6 +18,7 @@ class RootWidget(QWidget):
         
         self.controls_widget = ControlsWidget(self)
         self.controls_widget.ui.glue_btn.clicked.connect(self.show_glue_popup)
+        self.non_rect_graph = NonRectGraph(self)
 
         controls_placeholder_widget = self.ui.controls_widget
         if controls_placeholder_widget.layout() is None:
@@ -28,7 +30,13 @@ class RootWidget(QWidget):
             placeholder_layout = QVBoxLayout()
             graph_placeholder_widget.setLayout(placeholder_layout)
 
+        non_rect_graph_widget = self.ui.non_rectangle_graph_widget
+        if non_rect_graph_widget.layout() is None:
+            placeholder_layout = QVBoxLayout()
+            non_rect_graph_widget.setLayout(placeholder_layout)
+
         controls_placeholder_widget.layout().addWidget(self.controls_widget)
+        non_rect_graph_widget.layout().addWidget(self.non_rect_graph)
 
         self.add_graph()
         self.add_graph()

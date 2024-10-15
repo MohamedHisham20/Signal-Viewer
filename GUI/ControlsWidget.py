@@ -11,7 +11,6 @@ class ControlsWidget(QWidget):
         self.ui = Ui_Controls_Widget()
         self.ui.setupUi(self)
         self.root_widget = self.parent()
-        print(self.root_widget)
         self.signals = []
         self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
