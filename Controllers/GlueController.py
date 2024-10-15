@@ -49,44 +49,28 @@ class GlueController:
         return processed_data
 
 
-
     @staticmethod
     def InterPolate_signals(signal1, signal2, order, overlap):
-        """
-        Interpolates or glues two signals, averaging overlapping points.
-
-        Parameters:
-        signal1 (array-like): First signal to glue.
-        signal2 (array-like): Second signal to glue.
-        order (int): Interpolation order (not used in the non-scipy version).
-        overlap (int): Number of overlapping points.
-
-        Returns:
-        np.array: Glued signal with averaged overlap.
-        """
+        kinds = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
+        order =int(order)
+        order = kinds[order]
+        overlap = int(overlap)        
         signal1 = np.array(signal1)
         signal2 = np.array(signal2)
-        
+        signal1_normalized = np.linspace(0, 1, len(signal1)) 
+        signal2_normalized = np.linspace(0, 1, len(signal2))
         if overlap > 0:
-            # Get the non-overlapping portions of each signal
-            non_overlap_signal1 = signal1[:-overlap]
-            non_overlap_signal2 = signal2[overlap:]
-
-            # Averaging the overlapping region
-            overlapped_avg = (signal1[-overlap:] + signal2[:overlap]) / 2
-            
-            # Concatenate the signals
-            concatenated_signal = np.concatenate((non_overlap_signal1, overlapped_avg, signal2[overlap:]))
+            predict1 = interpolate.interp1d(signal1_normalized, signal1, kind =order, axis=0)
+            predict2 = interpolate.interp1d(signal2_normalized, signal2, kind =order,axis=0)
+            overlap_x = np.linspace(0, 1, overlap)
+            weights1 = np.linspace(1, 0, overlap)  
+            weights2 = np.linspace(0, 1, overlap)  
+            overlap_section = weights1[:, None] * predict1(overlap_x) + weights2[:, None] * predict2(overlap_x)
+            concatenated_signal = np.concatenate((signal1, overlap_section, signal2[overlap:]))
+            concatenated_signal = np.unique(concatenated_signal, axis=0)
         else:
-            # In case of negative overlap (gap), we create a linear bridge between the end of signal1 and start of signal2
-            gap = -overlap
-            x_values_glued = np.linspace(signal1[-1, 0], signal2[0, 0], gap)
-            y_values_glued = np.linspace(signal1[-1, 1], signal2[0, 1], gap)
-            
-            # Stack x and y glued values to form the bridge
+            x_values_glued = np.linspace(signal1[-1, 0], signal2[0, 0], -overlap)
+            y_values_glued = np.linspace(signal1[-1, 1], signal2[0, 1], -overlap)
             glue_section = np.column_stack((x_values_glued, y_values_glued))
-            
-            # Concatenate signal1, bridge (glue_section), and signal2
             concatenated_signal = np.concatenate((signal1, glue_section, signal2))
-
         return concatenated_signal
