@@ -22,7 +22,8 @@ class NewGraph(PlotWidget):
         self.curves = []
         self.init_curves()
 
-        self.timer.start(self.timer_interval)
+        if len(self.signals) != 0:
+            self.timer.start(self.timer_interval)
 
     def init_curves(self):
         for signal in self.signals:
@@ -37,12 +38,19 @@ class NewGraph(PlotWidget):
         if self.signals:
             self.current_time += self.current_speed * (self.timer_interval / 1000.0)
 
-            x_range, y_range = self.plot_item.getViewBox().viewRange()
-            current_xmin, current_xmax = x_range
-            current_ymin, current_ymax = y_range
+            # Get current axis ranges after the plot is updated
+            x_axis = self.plot_item.getAxis('bottom')
+            y_axis = self.plot_item.getAxis('left')
 
-            # Not sure about this.........
+            # Ensure to print out current ranges to see their values
+            current_xmin, current_xmax = x_axis.range
+            current_ymin, current_ymax = y_axis.range
+
+            print("current_xmin ", current_xmin, " current_xmax ", current_xmax)
+
+            # Define time window for updating
             time_window = current_xmax - current_xmin
+            print("time window ", time_window)
             start_time = self.current_time - time_window
             end_time = self.current_time
 
@@ -56,10 +64,20 @@ class NewGraph(PlotWidget):
                     start_index, end_index = indices[0], indices[-1]
                     self.curves[i].setData(x_data[start_index:end_index], y_data[start_index:end_index])
 
-                    current_ymin, current_ymax = min(current_ymin, min(y_data[start_index:end_index])), max(current_ymax, max(y_data[start_index:end_index]))
+                    print("start_index ", start_index, " end_index ", end_index)
+                    print("start_time ", start_time, " end time ", end_time)
+                    print("min y in data ", min(y_data[start_index:end_index]))
 
+                    # Update current ymin and ymax
+                    current_ymin, current_ymax = min(current_ymin, min(y_data[start_index:end_index])), max(
+                        current_ymax, max(y_data[start_index:end_index]))
+
+            # Update the x-axis range to reflect the current time window
             self.plot_item.getViewBox().setXRange(start_time, end_time)
-            self.plot_item.getViewBox().setYRange(current_ymin, current_ymax)
+            print(current_ymin, current_ymax)
+
+            # Update the y-axis range if necessary
+            # self.plot_item.getViewBox().setYRange(current_ymin, current_ymax)
 
             if self.__get_last_time() <= self.current_time:
                 self.timer.stop()
@@ -90,6 +108,8 @@ class NewGraph(PlotWidget):
 
     def add_signal(self, signal):
         # Add to signal_list, and maybe change the starting value of the signal to match the graph's current time???
+        if len(self.signals) == 0:
+            self.timer.start(self.timer_interval)
         self.signals.append(signal)
         curve = self.plot_item.plot(pen=mkPen('r', width=2))
         self.curves.append(curve)

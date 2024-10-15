@@ -89,13 +89,17 @@ class GraphWidget(QWidget):
         elif action == pause_play:
             self.toggle_pause_play()
         elif action == speed_up:
-            self.graphController.increase_plotting_speed(self.graph)
+            # self.graphController.increase_plotting_speed(self.graph)
+            self.new_graph.speed_up()
         elif action == slow_down:
-            self.graphController.decrease_plotting_speed(self.graph)
+            # self.graphController.decrease_plotting_speed(self.graph)
+            self.new_graph.slow_down()
         elif action == zoom_in:
-            self.graphController.zoom_in(self.graph)
+            # self.graphController.zoom_in(self.graph)
+            self.new_graph.zoom_in()
         elif action == zoom_out:
-            self.graphController.zoom_out(self.graph)
+            # self.graphController.zoom_out(self.graph)
+            self.new_graph.zoom_out()
         elif action == remove:
             self.deleteLater()
 
@@ -155,7 +159,8 @@ class GraphWidget(QWidget):
 
     def toggle_pause_play(self):
         try:
-            self.graphController.toggle_play_pause_btn(self.graph)
+            self.new_graph.toggle_play_pause()
+            # self.graphController.toggle_play_pause_btn(self.graph)
         except AttributeError:
             pass
         self.playing_state = not self.playing_state
