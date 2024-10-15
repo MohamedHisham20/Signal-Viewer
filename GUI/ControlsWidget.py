@@ -22,7 +22,7 @@ class ControlsWidget(QWidget):
 
         self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
         self.connect_all_graphs_btns()
-        self.ui.report_btn.setEnabled(True) 
+        self.ui.report_btn.setEnabled(True)
         self.ui.report_btn.clicked.connect(self.show_report_popup)
 
     def show_signal_list_context_menu(self, position):
@@ -70,13 +70,13 @@ class ControlsWidget(QWidget):
     def load_from_web(self):
         signal = GlueController.real_time_signal()
         signal = GlueController.process_data(signal)
-        close = Signal.from_NP_array(signal['close'] , 'close')
-        self.add_signal(close,)
-        open = Signal.from_NP_array(signal['open'] ,'open')
+        close = Signal.from_NP_array(signal['close'], 'close')
+        self.add_signal(close, )
+        open = Signal.from_NP_array(signal['open'], 'open')
         self.add_signal(open)
-        high = Signal.from_NP_array(signal['high'],'high')
+        high = Signal.from_NP_array(signal['high'], 'high')
         self.add_signal(high)
-        low = Signal.from_NP_array(signal['low'] ,'low')
+        low = Signal.from_NP_array(signal['low'], 'low')
         self.add_signal(low)
         # #add to graph
         # self.root_widget.add_graph()
@@ -110,14 +110,6 @@ class ControlsWidget(QWidget):
         self.ui.slow_down_btn.setEnabled(True)
 
     def show_report_popup(self):
-        all_signals = self.signals
-        print(all_signals)
-        # create a window to add the report widget to it
-        self.report_window = QWidget()
-        self.report_widget = GraphWindow(data_dict=all_signals)
-        # set layout and add the widget to the window
-        layout = QVBoxLayout()
-        layout.addWidget(self.report_widget)
-        self.report_window.setLayout(layout)
-        # show the window
-        self.report_window.show()
+        graph_window = GraphWindow(self.signals)
+        graph_window.show()
+        graph_window.exec()
