@@ -5,6 +5,7 @@ from pyqtgraph import PlotWidget
 from Controllers.GlueController import GlueController
 from GUI.GraphWidget import GraphWidget
 from Controllers.GraphController import GraphController
+from GUI.Signal import Signal
 
 class GlueSignalsPopup(QDialog):
     def __init__(self, signal1, signal2, glue_function, report_function, parent=None):
@@ -125,15 +126,17 @@ class GlueSignalsPopup(QDialog):
 
 
         self.plot_widget.plot(glued_signal, pen='g')
-        self.add_signal(self.control.root, glued_signal)
+        self.add_signal(self.control, glued_signal)
         self.accept()
 
     @staticmethod
     def add_signal(root , glued_signal):
-        graph_widget = GraphWidget(root)
+        root.add_graph()
+        graph_widget = root.graphs[-1]
+        # graph_widget = GraphWidget(root)
         graph_widget.swapAction = root.swap
-        root.graphs.append(graph_widget)
-        root.ui.graph_placeholder_widget.layout().addWidget(graph_widget)
-        GraphController.load_signal_fromNP(graph_widget.graph, glued_signal)
-        
+        signal = Signal.from_NP_array(glued_signal, 'Glued Signal')
+        graph_widget.add_signal(signal)
+
+        # root.ui.graph_placeholder_widget.layout().addWidget(graph_widget)
     
