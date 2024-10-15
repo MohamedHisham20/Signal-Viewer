@@ -1,6 +1,7 @@
 from PySide6.QtCharts import QLineSeries, QValueAxis
-from PySide6.QtCore import QPointF, Qt, QObject, QEvent
+from PySide6.QtCore import QPointF, Qt, QObject, QEvent, QRectF
 from PySide6.QtGui import QWheelEvent, QMouseEvent
+from PySide6.QtWidgets import QPushButton
 import sys
 from typing import List, Dict
 import os
@@ -36,8 +37,10 @@ class GraphController():
         graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph.ID))
         graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph.ID))
         graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph.ID))
+        graph.select_signal_part_btn.clicked.connect(lambda: self.signal_part_selection_requested(graph.ID))
         
         graph.timer.timeout.connect(lambda: self.plot_signals(graph))
+            
     
     def get_graph(self, graph_id:int):
         for graph in self.controlled_graphs:
@@ -238,4 +241,47 @@ class GraphController():
         graph.chart_view.chart().zoomOut()
     
     
-                                   
+    def get_signal_from_graph(self, signal_id:int, graph:Graph):
+        for signal in graph.signals:
+            if signal.ID == signal_id:
+                return signal
+            
+        print("Such signal is not in this graph")    
+    
+    
+    def signal_part_selection_requested(self, graph_id:int):
+        graph = self.get_graph(graph_id)
+        graph.signal_part_selection_requested = True
+              
+
+    def plot_signals_selections(self, source_graph_id, new_graph_id):
+        
+        src_graph = self.get_graph(source_graph_id)
+        new_graph = self.get_graph(new_graph_id)
+        
+        src_graph.signal_part_selection_requested = False
+        new_graph.plotting_index = 0
+        
+        for key in src_graph.selected_signals_parts.keys():
+            series = QLineSeries()
+            series.setName(str(key))
+            new_graph.chart.addSeries(series)        
+        
+        new_graph.chart.removeAllSeries()
+        new_graph.active = True
+        new_graph.timer.start(new_graph.timer.interval())
+        new_graph.play_pause_btn.setText("pause")
+        
+        counter = 0
+        while counter < len(src_graph.selected_signals_parts.values()):
+            counter = 0
+            for list in src_graph.selected_signals_parts.values():
+                if new_graph.plotting_index < len(list):
+                    signal_series = new_graph.chart.series()[key]
+                    if isinstance(signal_series, QLineSeries):
+                        signal_series.append(list[new_graph.plotting_index])
+                else: counter+=1        
+            new_graph.plotting_index+=1                        
+                
+        new_graph.timer.stop()
+        new_graph.active = False
