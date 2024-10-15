@@ -227,8 +227,8 @@ class ReportWindow(QDialog):
             print(f"Report saved to {file_name}")
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    main_window = GraphWindow(data_dict=None)
-    main_window.show()
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     main_window = GraphWindow(data_dict=None)
+#     main_window.show()
+#     sys.exit(app.exec_())

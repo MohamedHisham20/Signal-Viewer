@@ -1,6 +1,9 @@
+from PyQt5.QtGui import QWindow
+from PyQt5.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget, QMenu
 from PySide6.QtCore import Qt
 
+from Controllers.report import GraphWindow
 from GUI.Signal import Signal
 from GUI.UI.UI_controls_widget import Ui_Controls_Widget
 from Controllers.GlueController import GlueController
@@ -100,6 +103,16 @@ class ControlsWidget(QWidget):
         self.ui.zoom_out_btn.setEnabled(True)
         self.ui.speed_up_btn.setEnabled(True)
         self.ui.slow_down_btn.setEnabled(True)
+
     def show_report_popup(self):
-        self.signals
-        pass
+        all_signals = self.signals
+        print(all_signals)
+        # create a window to add the report widget to it
+        self.report_window = QWidget()
+        self.report_widget = GraphWindow(data_dict=all_signals)
+        # set layout and add the widget to the window
+        layout = QVBoxLayout()
+        layout.addWidget(self.report_widget)
+        self.report_window.setLayout(layout)
+        # show the window
+        self.report_window.show()
