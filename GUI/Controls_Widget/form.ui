@@ -48,8 +48,8 @@
         <rect>
          <x>10</x>
          <y>10</y>
-         <width>281</width>
-         <height>91</height>
+         <width>294</width>
+         <height>100</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -64,26 +64,12 @@
          </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QPushButton" name="beginning_btn">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <widget class="QPushButton" name="slow_down_btn">
+            <property name="enabled">
+             <bool>false</bool>
             </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>../Icons/begin.png</normaloff>../Icons/begin.png</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="fast_backward_btn">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -101,6 +87,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pause_play_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -117,7 +106,10 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="fast_forward_btn">
+           <widget class="QPushButton" name="speed_up_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -134,7 +126,10 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="end_btn">
+           <widget class="QPushButton" name="zoom_in_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -146,7 +141,27 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../Icons/end.png</normaloff>../Icons/end.png</iconset>
+              <normaloff>../../Icons/zoom-in.png</normaloff>../../Icons/zoom-in.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="zoom_out_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../../Icons/zoom-out.png</normaloff>../../Icons/zoom-out.png</iconset>
             </property>
            </widget>
           </item>
