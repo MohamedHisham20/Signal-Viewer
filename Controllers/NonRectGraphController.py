@@ -42,7 +42,8 @@ class RadarGraph(QFrame):
             # Scale the signal values to fit within 360 degrees (the data is array of y values)
             scaled_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 360
             self.data = scaled_data
-            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
+            self.remaining_points = [(i, angle) for i, angle in enumerate(np.linspace(0, 360, len(self.data)))]
+
         except Exception as e:
             print(f"Error loading file: {e}")
 
@@ -52,9 +53,12 @@ class RadarGraph(QFrame):
         self.radar_angle += self.radar_speed
         if self.radar_angle >= 360:
             self.radar_angle = 0
-            self.hit_points.clear()
+            self.hit_points.clear()  # Clear only hit points, not remaining points
             self.prev_hit_point = None
-            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
+
+            # Optionally retain remaining_points if you want to keep the signal visible
+            # Alternatively, reset if you want to refresh from original data
+            # self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
 
         self.update_hit_points()
         self.update()
@@ -65,7 +69,7 @@ class RadarGraph(QFrame):
         for i, angle in self.remaining_points:
             if angle <= self.radar_angle:
                 # Random distance within the radar circle (scaled)
-                distance = np.random.randint(30, self.radius)
+                distance = self.radius * (self.data[i] / 360)  # Scale based on the angle data
                 scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
                 x = self.width() // 2 + scaled_distance * np.cos(np.radians(angle))
                 y = self.height() // 2 - scaled_distance * np.sin(np.radians(angle))
@@ -97,7 +101,7 @@ class RadarGraph(QFrame):
         # Add new points to the hit points
         for i, point_angle in to_hit:
             # Calculate position for the hit points
-            distance = np.random.randint(30, self.radius)
+            distance = self.radius * (self.data[i] / 360)  # Scale based on the angle data
             scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
             x = self.width() // 2 + scaled_distance * np.cos(np.radians(point_angle))
             y = self.height() // 2 - scaled_distance * np.sin(np.radians(point_angle))
@@ -140,9 +144,19 @@ class RadarGraph(QFrame):
         qp.drawEllipse(center_x - radar_radius, center_y - radar_radius, radar_radius * 2,
                        radar_radius * 2)  # Radar base
 
+        # Draw the ECG signal in a circular manner
+        if len(self.data) > 0:
+            for i in range(len(self.data)):
+                angle = np.deg2rad(i * (360 / len(self.data)))  # Convert to radians
+                # Scale the signal values for radial distance
+                distance = (self.data[i] - np.min(self.data)) / (np.max(self.data) - np.min(self.data)) * radar_radius
+                x = center_x + distance * np.cos(angle)
+                y = center_y - distance * np.sin(angle)
+                qp.setPen(QPen(Qt.green, 2))
+                qp.drawPoint(int(x), int(y))
+
         # Draw the radar sweep (rotating line)
         qp.setPen(QPen(Qt.red, 2))
-
         # Calculate the end of the radar sweep based on the current angle
         x = center_x + radar_radius * np.cos(np.radians(self.radar_angle))
         y = center_y - radar_radius * np.sin(np.radians(self.radar_angle))
