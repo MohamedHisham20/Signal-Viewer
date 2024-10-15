@@ -30,7 +30,6 @@ class Signal():
 
         except Exception as e:
             return None
-
         return Signal(data_pnts)
 
     @staticmethod
@@ -41,3 +40,10 @@ class Signal():
             data_pnts.append((x, y))
 
         return Signal(data_pnts)
+
+
+    def get_y_values(self):
+        y_values = []
+        for pnt in self.data_pnts:
+            y_values.append(pnt[1])
+        return y_values
