@@ -104,4 +104,4 @@ class ControlsWidget(QWidget):
     def show_report_popup(self):
         graph_window = GraphWindow(self.signals)
         graph_window.show()
-        graph_window.exec()
+        graph_window.exec_()

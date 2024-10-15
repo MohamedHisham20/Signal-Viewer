@@ -1,8 +1,9 @@
 import os
 import sys
 import numpy as np
-from PySide6.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
-                             QDialog, QFileDialog, QInputDialog)
+from PySide6.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+                               QTextEdit,
+                               QDialog, QFileDialog, QInputDialog, QSizePolicy)
 import pyqtgraph as pg
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -10,7 +11,7 @@ from pyqtgraph.exporters import ImageExporter
 
 
 class GraphWindow(QWidget):
-    def __init__(self, data_dict=None):
+    def __init__(self, signals=None):
         super().__init__()
         self.setWindowTitle("Graph Cropping Example")
         self.setGeometry(100, 100, 600, 400)
@@ -19,14 +20,12 @@ class GraphWindow(QWidget):
         self.layout = QVBoxLayout()
         self.graph_widget = pg.PlotWidget()
         self.layout.addWidget(self.graph_widget)
+        self.data_dict = {}
 
         # Initial data and dataset dictionary
-        self.data_dict = {
-            'graph1': np.random.randn(100),  # Example datasets
-            'graph2': np.sin(np.linspace(0, 2 * np.pi, 100)),
-            'graph3': np.cos(np.linspace(0, 2 * np.pi, 100))
-        }
-        self.data_key = 'graph1'  # Default dataset
+        for signal in signals:
+            self.data_dict[signal.ID] = signal.get_y_values()
+        self.data_key = signals[0].ID  # Default dataset
         self.data = self.data_dict[self.data_key]
         self.plot = self.graph_widget.plot(self.data, pen='b')
 
@@ -79,7 +78,7 @@ class GraphWindow(QWidget):
             # Crop the data from the original data
             cropped_data = self.original_data[start:end]
             self.cropped_data.append(cropped_data)  # Store the current cropped data
-            self.all_cropped_data.append(cropped_data.tolist())
+            self.all_cropped_data.append(cropped_data)
 
             # Plot the cropped data below the original graph
             cropped_graph_widget = pg.PlotWidget()
@@ -142,8 +141,9 @@ class ReportWindow(QDialog):
         # Add a text area for the user to write the report
         self.report_text = QTextEdit(self)
         self.report_text.setPlaceholderText("Write your report here...")
-        self.report_text.setSizePolicy(self.report_text.sizePolicy().horizontalPolicy(),
-                                       self.report_text.sizePolicy().Preferred)  # Stretchable
+        # self.report_text.setSizePolicy(self.report_text.sizePolicy().horizontalPolicy(),
+        #                                QSizePolicy.)  # Stretchable
+
         layout.addWidget(self.report_text)
 
         # Display the cropped data as graphs
