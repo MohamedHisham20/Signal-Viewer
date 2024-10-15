@@ -16,11 +16,13 @@ class ControlsWidget(QWidget):
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
 
         self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
+        self.connect_all_graphs_btns()
 
     def show_signal_list_context_menu(self, position):
         item = self.ui.signals_list_widget.itemAt(position)
         if item is None:
             self.show_add_signal_context_menu(position)
+            return
 
         menu = QMenu(self)
         add_to_submenu = QMenu("Add to", self)
@@ -56,3 +58,18 @@ class ControlsWidget(QWidget):
     def add_signal(self, signal):
         self.signals.append(signal)
         self.ui.signals_list_widget.addItem(signal.ID)
+        self.enable_control_btns()
+
+    def connect_all_graphs_btns(self):
+        self.ui.zoom_in_btn.clicked.connect(lambda: self.root_widget.zoom_in_all_graphs())
+        self.ui.zoom_out_btn.clicked.connect(lambda: self.root_widget.zoom_out_all_graphs())
+        self.ui.speed_up_btn.clicked.connect(lambda: self.root_widget.speed_up_all_graphs())
+        self.ui.slow_down_btn.clicked.connect(lambda: self.root_widget.slow_down_all_graphs())
+        self.ui.pause_play_btn.clicked.connect(lambda: self.root_widget.toggle_play_pause_all_graphs())
+
+    def enable_control_btns(self):
+        self.ui.pause_play_btn.setEnabled(True)
+        self.ui.zoom_in_btn.setEnabled(True)
+        self.ui.zoom_out_btn.setEnabled(True)
+        self.ui.speed_up_btn.setEnabled(True)
+        self.ui.slow_down_btn.setEnabled(True)

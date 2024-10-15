@@ -104,3 +104,28 @@ class RootWidget(QWidget):
         signal2 = [[i, 5 * np.cos(i)] for i in range(5)]
         glue_popup = Glue_popup.GlueSignalsPopup(signal1, signal2, None, None, self)
         glue_popup.exec()
+
+    def toggle_play_pause_all_graphs(self):
+        for graph_widget in self.graphs:
+            if graph_widget.graph.signals_counter != 0:
+                graph_widget.toggle_pause_play()
+
+    def zoom_in_all_graphs(self):
+        for graph_widget in self.graphs:
+            if graph_widget.graph.signals_counter != 0:
+                graph_widget.graphController.zoom_in(graph_widget.graph)
+
+    def zoom_out_all_graphs(self):
+        for graph_widget in self.graphs:
+            if graph_widget.graph.signals_counter != 0:
+                graph_widget.graphController.zoom_out(graph_widget.graph)
+
+    def speed_up_all_graphs(self):
+        for graph_widget in self.graphs:
+            if graph_widget.graph.signals_counter != 0:
+                graph_widget.graphController.increase_plotting_speed(graph_widget.graph)
+
+    def slow_down_all_graphs(self):
+        for graph_widget in self.graphs:
+            if graph_widget.graph.signals_counter != 0:
+                graph_widget.graphController.decrease_plotting_speed(graph_widget.graph)

@@ -26,7 +26,6 @@ class GraphWidget(QWidget):
             self.ui.graph_placeholder.setLayout(QVBoxLayout())
         self.ui.graph_placeholder.layout().addWidget(self.graph)
         self.swapAction = lambda: None
-        
 
         GraphWidget.instance_count += 1
         self.setObjectName(f"graph_widget_{GraphWidget.instance_count}")
@@ -41,17 +40,17 @@ class GraphWidget(QWidget):
 
     def connect_buttons(self):
         self.ui.pause_play_btn.clicked.connect(lambda: self.toggle_pause_play())
-        self.ui.fast_backward_btn.clicked.connect(lambda: self.graphController.increase_plotting_speed(self.graph))
-        self.ui.fast_forward_btn.clicked.connect(lambda: self.graphController.decrease_plotting_speed(self.graph))
-        # self.ui.beginning_btn.clicked.connect(lambda: self.graphController.pan_to_start(self.graph))
-        # self.ui.end_btn.clicked.connect(lambda: self.graphController.pan_to_end(self.graph))
+        self.ui.speed_up_btn.clicked.connect(lambda: self.graphController.increase_plotting_speed(self.graph))
+        self.ui.slow_down_btn.clicked.connect(lambda: self.graphController.decrease_plotting_speed(self.graph))
+        self.ui.zoom_in_btn.clicked.connect(lambda: self.graphController.zoom_in(self.graph))
+        self.ui.zoom_out_btn.clicked.connect(lambda: self.graphController.zoom_out(self.graph))
 
     def show_context_menu(self, position):
         root_widget = self.parent().parent().parent().parent().parent().parent()
         menu = QMenu(self)
         change_title = menu.addAction("Change Title")
         menu.addSeparator()
-    
+
         add_signal_submenu = QMenu("Add Signal", self)
         signal_from_file = add_signal_submenu.addAction("From File")
         signal_from_web = add_signal_submenu.addAction("From the Web")
@@ -61,8 +60,8 @@ class GraphWidget(QWidget):
         pause_play = menu.addAction("Pause/Play")
         speed_up = menu.addAction("Speed Up")
         slow_down = menu.addAction("Slow Down")
-        pan_begin = menu.addAction("Pan To Start")
-        pan_end = menu.addAction("Pan To End")
+        zoom_in = menu.addAction("Zoom In")
+        zoom_out = menu.addAction("Zoom Out")
         menu.addSeparator()
 
         remove = menu.addAction("Remove Graph")
@@ -71,8 +70,8 @@ class GraphWidget(QWidget):
             pause_play.setEnabled(False)
             speed_up.setEnabled(False)
             slow_down.setEnabled(False)
-            pan_begin.setEnabled(False)
-            pan_end.setEnabled(False)
+            zoom_out.setEnabled(False)
+            zoom_in.setEnabled(False)
 
         action = menu.exec(self.mapToGlobal(position))
 
@@ -89,10 +88,10 @@ class GraphWidget(QWidget):
             self.graphController.increase_plotting_speed(self.graph)
         elif action == slow_down:
             self.graphController.decrease_plotting_speed(self.graph)
-        elif action == pan_begin:
-            pass
-        elif action == pan_end:
-            pass
+        elif action == zoom_in:
+            self.graphController.zoom_in(self.graph)
+        elif action == zoom_out:
+            self.graphController.zoom_out(self.graph)
         elif action == remove:
             self.deleteLater()
 
@@ -148,7 +147,7 @@ class GraphWidget(QWidget):
                 self.ChangeOrder = 'down'
                 self.swapAction()
         else:
-            print('Initial position not set.', y_distance)
+            print('Initial position not set.')
 
     def toggle_pause_play(self):
         try:
@@ -163,10 +162,10 @@ class GraphWidget(QWidget):
 
     def enable_controls(self):
         self.ui.pause_play_btn.setEnabled(True)
-        self.ui.beginning_btn.setEnabled(True)
-        self.ui.end_btn.setEnabled(True)
-        self.ui.fast_forward_btn.setEnabled(True)
-        self.ui.fast_backward_btn.setEnabled(True)
+        self.ui.zoom_in_btn.setEnabled(True)
+        self.ui.zoom_out_btn.setEnabled(True)
+        self.ui.slow_down_btn.setEnabled(True)
+        self.ui.speed_up_btn.setEnabled(True)
 
     def add_signal(self, signal):
         self.graphController.add_signal_to_graph(signal, self.graph)
