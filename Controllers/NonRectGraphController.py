@@ -4,6 +4,8 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPainter, QPen
 from PySide6.QtWidgets import QVBoxLayout, QPushButton, QScrollBar, QHBoxLayout, QFileDialog, QFrame
 
+from GUI import Signal
+
 
 class RadarGraph(QFrame):
     def __init__(self, parent=None):
@@ -34,6 +36,17 @@ class RadarGraph(QFrame):
         except Exception as e:
             print(f"Error loading file: {e}")
 
+    def load_y_axis(self, data, y_axis_header):
+        """Load signal data from a CSV file."""
+        try:
+
+            # Scale the signal values to fit within 360 degrees (the data is array of y values)
+            scaled_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 360
+            self.data = scaled_data
+            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
+        except Exception as e:
+            print(f"Error loading file: {e}")
+
     def update_radar(self):
         """Update the radar sweep and check for 'hits'."""
         # Increment the radar angle
@@ -54,7 +67,7 @@ class RadarGraph(QFrame):
             if angle <= self.radar_angle:
                 # Random distance within the radar circle (scaled)
                 distance = np.random.randint(30, self.radius)
-                scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
+                scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
                 x = self.width() // 2 + scaled_distance * np.cos(np.radians(angle))
                 y = self.height() // 2 - scaled_distance * np.sin(np.radians(angle))
                 self.hit_points.append((int(x), int(y)))
@@ -166,6 +179,10 @@ class NonRectGraph(QFrame):
         self.load_csv_button = QPushButton("Load CSV")
         self.load_csv_button.clicked.connect(self.load_csv)
 
+        #create button to load y axis
+        self.load_y_axis_button = QPushButton("Load Y Axis")
+        self.load_y_axis_button.clicked.connect(self.load_y_axis)
+
         # Create a horizontal scrollbar
         self.scroll_bar = QScrollBar(Qt.Horizontal)
         self.scroll_bar.setMinimum(0)
@@ -182,6 +199,7 @@ class NonRectGraph(QFrame):
         controls_layout.addWidget(self.play_button)
         controls_layout.addWidget(self.pause_button)
         controls_layout.addWidget(self.load_csv_button)
+        controls_layout.addWidget(self.load_y_axis_button)
         layout.addLayout(controls_layout)
         layout.addWidget(self.scroll_bar)
 
@@ -204,3 +222,9 @@ class NonRectGraph(QFrame):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load CSV", "", "CSV Files (*.csv)")
         if file_path:
             self.radar_widget.load_data_from_csv(file_path)
+
+    def load_y_axis(self, signal: Signal):
+        """" get a signal object passed from the main window and load the y axis"""
+        y_values = signal.get_y_values()
+        self.radar_widget.load_y_axis(y_values, signal.label)
+
