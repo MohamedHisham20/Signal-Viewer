@@ -41,3 +41,12 @@ class Signal():
             data_pnts.append((x, y))
 
         return Signal(data_pnts)
+    
+    @staticmethod
+    def from_NP_array(np_array, label):
+        data_pnts = []
+        for row in np_array:
+            x, y = row[0], row[1]
+            data_pnts.append((x, y))
+
+        return Signal(data_pnts, label)

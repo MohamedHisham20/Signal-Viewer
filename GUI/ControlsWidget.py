@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget, QMenu
 from PySide6.QtCore import Qt
 
+from GUI.Signal import Signal
 from GUI.UI.UI_controls_widget import Ui_Controls_Widget
 from Controllers.GlueController import GlueController
 
@@ -17,6 +18,8 @@ class ControlsWidget(QWidget):
 
         self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
         self.connect_all_graphs_btns()
+        self.ui.report_btn.setEnabled(True) 
+        self.ui.report_btn.clicked.connect(self.show_report_popup)
 
     def show_signal_list_context_menu(self, position):
         item = self.ui.signals_list_widget.itemAt(position)
@@ -54,6 +57,30 @@ class ControlsWidget(QWidget):
 
         if action == from_file:
             self.root_widget.load_signal()
+        if action == from_web:
+            self.load_from_web()
+
+    def load_from_web(self):
+        signal = GlueController.real_time_signal()
+        signal = GlueController.process_data(signal)
+        close = Signal.from_NP_array(signal['close'] , 'close')
+        self.add_signal(close,)
+        open = Signal.from_NP_array(signal['open'] ,'open')
+        self.add_signal(open)
+        high = Signal.from_NP_array(signal['high'],'high')
+        self.add_signal(high)
+        low = Signal.from_NP_array(signal['low'] ,'low')
+        self.add_signal(low)
+        # #add to graph
+        # self.root_widget.add_graph()
+        # graph = self.root_widget.graphs[-1]
+        # graph.add_signal(close)
+        # graph.add_signal(open)
+        # graph.add_signal(high)
+        # graph.add_signal(low)
+
+        
+
 
     def add_signal(self, signal):
         self.signals.append(signal)
@@ -73,3 +100,6 @@ class ControlsWidget(QWidget):
         self.ui.zoom_out_btn.setEnabled(True)
         self.ui.speed_up_btn.setEnabled(True)
         self.ui.slow_down_btn.setEnabled(True)
+    def show_report_popup(self):
+        self.signals
+        pass
