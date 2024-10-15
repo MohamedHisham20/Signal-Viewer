@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
+from PySide6.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
                              QDialog, QFileDialog, QInputDialog)
 import pyqtgraph as pg
 from reportlab.lib.pagesizes import letter
@@ -227,8 +227,8 @@ class ReportWindow(QDialog):
             print(f"Report saved to {file_name}")
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    main_window = GraphWindow(data_dict=None)
-    main_window.show()
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     main_window = GraphWindow(data_dict=None)
+#     main_window.show()
+#     sys.exit(app.exec_())

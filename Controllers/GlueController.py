@@ -26,15 +26,28 @@ class GlueController:
             raise Exception(f"Failed to fetch data: {response.status_code}")
         
     @staticmethod
-    def process_signal_data(data):
-        graphs = [Graph() for _ in range(5)]
-        for idx, row in enumerate(data):
-            x = idx 
-            for i, key in enumerate(['open', 'high', 'low', 'close', 'volume']):
-                y = float(row[key])  
-                pnt = QPointF(x, y)
-                graphs[i].data_pnts.append(pnt)  
-        return graphs
+    def process_data(data):
+        processed_data = {
+            'open': [],
+            'high': [],
+            'low': [],
+            'close': []
+        }
+        for i, row in enumerate(data):
+            y_open = float(row['open'])
+            y_high = float(row['high'])
+            y_low = float(row['low'])
+            y_close = float(row['close'])
+            y_open = (y_open - np.min([y_open, y_high, y_low, y_close])) / (np.max([y_open, y_high, y_low, y_close]) - np.min([y_open, y_high, y_low, y_close]))
+            y_high = (y_high - np.min([y_open, y_high, y_low, y_close])) / (np.max([y_open, y_high, y_low, y_close]) - np.min([y_open, y_high, y_low, y_close]))
+            y_low = (y_low - np.min([y_open, y_high, y_low, y_close])) / (np.max([y_open, y_high, y_low, y_close]) - np.min([y_open, y_high, y_low, y_close]))
+            y_close = (y_close - np.min([y_open, y_high, y_low, y_close])) / (np.max([y_open, y_high, y_low, y_close]) - np.min([y_open, y_high, y_low, y_close]))
+            processed_data['open'].append([i, y_open])
+            processed_data['high'].append([i, y_high])
+            processed_data['low'].append([i, y_low])
+            processed_data['close'].append([i, y_close])
+        return processed_data
+
 
     @staticmethod
     def InterPolate_signals(signal1, signal2, order, overlap):

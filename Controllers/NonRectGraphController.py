@@ -39,7 +39,6 @@ class RadarGraph(QFrame):
     def load_y_axis(self, data, y_axis_header):
         """Load signal data from a CSV file."""
         try:
-
             # Scale the signal values to fit within 360 degrees (the data is array of y values)
             scaled_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 360
             self.data = scaled_data
@@ -99,7 +98,7 @@ class RadarGraph(QFrame):
         for i, point_angle in to_hit:
             # Calculate position for the hit points
             distance = np.random.randint(30, self.radius)
-            scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
+            scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
             x = self.width() // 2 + scaled_distance * np.cos(np.radians(point_angle))
             y = self.height() // 2 - scaled_distance * np.sin(np.radians(point_angle))
 
@@ -181,7 +180,7 @@ class NonRectGraph(QFrame):
 
         #create button to load y axis
         self.load_y_axis_button = QPushButton("Load Y Axis")
-        self.load_y_axis_button.clicked.connect(self.load_y_axis)
+        self.load_y_axis_button.clicked.connect(self.signal_to_nonRect)
 
         # Create a horizontal scrollbar
         self.scroll_bar = QScrollBar(Qt.Horizontal)
@@ -223,8 +222,9 @@ class NonRectGraph(QFrame):
         if file_path:
             self.radar_widget.load_data_from_csv(file_path)
 
-    def load_y_axis(self, signal: Signal):
+    def signal_to_nonRect(self, signal: Signal):
         """" get a signal object passed from the main window and load the y axis"""
         y_values = signal.get_y_values()
         self.radar_widget.load_y_axis(y_values, signal.label)
+    
 
