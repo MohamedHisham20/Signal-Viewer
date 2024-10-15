@@ -1,3 +1,4 @@
+import numpy as np
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 
 from GUI.UI.UI_root_widget import Ui_root_widget
