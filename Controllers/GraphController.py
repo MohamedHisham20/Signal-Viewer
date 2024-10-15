@@ -1,8 +1,8 @@
 from PySide6.QtCharts import QLineSeries, QValueAxis
-from PySide6.QtCore import QPointF
-from PySide6.QtGui import QPen, QColor
+from PySide6.QtCore import QPointF, Qt, QObject, QEvent
+from PySide6.QtGui import QWheelEvent, QMouseEvent
 import sys
-import csv
+from typing import List, Dict
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
@@ -11,7 +11,7 @@ from GUI.Signal import Signal
               
 
                        
-class GraphController:
+class GraphController():
     """Methods marked with double underscore (__) as a prefix
     are of internal behaviour and should not be accessed by other developers
     outside this class.\n\n
@@ -19,36 +19,51 @@ class GraphController:
     """        
     
     def __init__(self):
-        print("A Graph Controller has been constructed")    
+        print("A Graph Controller has been constructed")
+        self.controlled_graphs: List[Graph] = []
+            
     
-    
-    def mount_btns_actions(self,graph:Graph):
+    def mount_btns_actions(self, graph:Graph):
         """This method has to be called immediately after constructing a graph\n
         to mount action on buttons"""
         
-        graph.play_pause_btn.clicked.connect(lambda:self.toggle_play_pause_btn(graph))
-        graph.replay_btn.clicked.connect(lambda:self.replay_signal(graph))
-        graph.reset_btn.clicked.connect(lambda:self.reset_graph(graph))
-        graph.zoom_in_btn.clicked.connect(lambda:self.zoom_in(graph))
-        graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph))
-        graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph))
-        graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph))
+        self.controlled_graphs.append(graph)
         
-        graph.timer.timeout.connect(lambda:self.plot_signals(graph))
+        graph.play_pause_btn.clicked.connect(lambda:self.toggle_play_pause_btn(graph.ID))
+        graph.replay_btn.clicked.connect(lambda:self.replay_signal(graph.ID))
+        graph.reset_btn.clicked.connect(lambda:self.reset_graph(graph.ID))
+        graph.zoom_in_btn.clicked.connect(lambda:self.zoom_in(graph.ID))
+        graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph.ID))
+        graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph.ID))
+        graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph.ID))
+        
+        graph.timer.timeout.connect(lambda: self.plot_signals(graph))
+    
+    def get_graph(self, graph_id:int):
+        for graph in self.controlled_graphs:
+            if graph.ID == graph_id:        
+                return graph
             
-    
-    def get_number_of_signals_in_graph(self,graph:Graph):    
-        return graph.signals_counter
+        print("Such Graph does not exist")    
     
     
-    def add_signal_to_graph(self,signal_ID , data_pnts, graph:Graph):
+    def get_number_of_signals_in_graph(self, graph_id:int):    
+        return self.get_graph(graph_id).signals_counter        
+    
+    
+    def add_signal_to_graph(self,signal_ID , data_pnts, graph_id:int):
         """stores data points in graph and turns signal"""
+        
+        graph = self.get_graph(graph_id)
+        
         new_signal = Signal(signal_ID, data_pnts)
         graph.signals.append(new_signal)
         graph.signals_counter+=1
         
     
-    def show_signal(self, signal_id:int, graph:Graph):
+    def show_signal(self, signal_id:int, graph_id:int):
+        graph = graph = self.get_graph(graph_id)
+        
         signal_id = str(signal_id)
         
         for series in graph.chart.series():
@@ -59,7 +74,9 @@ class GraphController:
                     break
                 
                 
-    def hide_signal(self, signal_id:int, graph:Graph):
+    def hide_signal(self, signal_id:int, graph_id:int):
+        graph = graph = self.get_graph(graph_id)
+        
         signal_id = str(signal_id)
         
         for series in graph.chart.series():
@@ -70,10 +87,12 @@ class GraphController:
                 else: return                
                 
         
-    def toggle_play_pause_btn(self, graph:Graph):
+    def toggle_play_pause_btn(self, graph_id:int):
         """Cotrols playing and pausing\n
         connected to play and pause button\n
         this method is connected to play_loaded_signals method"""
+        
+        graph = graph = self.get_graph(graph_id)
         
         if graph.signals_counter == 0: 
             print("Graph is empty. Add a signal first")
@@ -88,7 +107,6 @@ class GraphController:
                 graph.timer.start(graph.timer.interval())
                 graph.play_pause_btn.setText("pause")
             else:
-                graph.timer.start(graph.timer.interval())
                 graph.play_pause_btn.setText("pause")
                 self.get_chart_ready(graph)    
 
@@ -127,9 +145,11 @@ class GraphController:
       
         for series in graph.chart.series():
             series.attachAxis(axis_x)
-            series.attachAxis(axis_y)    
-        
+            series.attachAxis(axis_y) 
          
+        graph.timer.start(graph.timer.interval())    
+                
+    
     def plot_signals(self, graph:Graph):
         all_signals_data_pnts_plotted = True
         
@@ -146,10 +166,10 @@ class GraphController:
         else: graph.plotting_index+=1    
             
     
-    
-    def reset_graph(self,graph:Graph):
+    def reset_graph(self, graph_id:int):
         """Zeros the graph but the signals' files still exist.\n
         Signals are still attached to the graph so they can be played again"""
+        graph = self.get_graph(graph_id)
         
         if graph.signals_counter == 0:
             print("graph is already empty")
@@ -171,9 +191,10 @@ class GraphController:
         graph.active = False
             
                 
-    def replay_signal(self, graph:Graph,interval:int=5):
+    def replay_signal(self, graph_id:int, interval:int=5):
         """connected with replay button"""
         
+        graph = self.get_graph(graph_id)
         if graph.signals_counter==0:
             print("Graph is empty. Load a signal first")
             return
@@ -184,15 +205,21 @@ class GraphController:
         
         self.get_chart_ready(graph)
 
-    def increase_plotting_speed(self, graph:Graph):
-        """connected with + button"""
-        self.__control_speed(graph,-(graph.delta_interval))
     
-    def decrease_plotting_speed(self, graph:Graph):
+    def increase_plotting_speed(self, graph_id:int):
+        """connected with + button"""
+        graph = self.get_graph(graph_id)
+        self.__control_speed(graph.ID,-(graph.delta_interval))
+    
+    
+    def decrease_plotting_speed(self, graph_id:int):
         """connected with - button"""
-        self.__control_speed(graph, graph.delta_interval)
+        graph = self.get_graph(graph_id)
+        self.__control_speed(graph.id, graph.delta_interval)
         
-    def __control_speed(self, graph:Graph, delta_speed:int):
+    
+    def __control_speed(self, graph_id:int, delta_speed:int):
+        graph = self.get_graph(graph_id)
         if (graph.signals_counter==0) or graph.play_pause_btn.text=="play": return
         
         current_interval = graph.timer.interval()
@@ -200,11 +227,14 @@ class GraphController:
             new_interval = min(graph.min_plotting_interval, current_interval+delta_speed)
         else : new_interval = max(graph.max_plotting_interval, current_interval+delta_speed)
         graph.timer.setInterval(new_interval)         
+        
     
-    def zoom_in(self, graph:Graph):
+    def zoom_in(self, graph_id:int):
+        graph = self.get_graph(graph_id)
         graph.chart_view.chart().zoomIn()
     
-    def zoom_out(self, graph:Graph):
+    def zoom_out(self, graph_id:int):
+        graph = self.get_graph(graph_id)
         graph.chart_view.chart().zoomOut()
     
     

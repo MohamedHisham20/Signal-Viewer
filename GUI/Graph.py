@@ -1,16 +1,18 @@
-from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout,
-QHBoxLayout, QPushButton ,QScrollBar, QLineEdit)
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
+from PySide6.QtWidgets import (QWidget, QVBoxLayout,
+QHBoxLayout, QPushButton ,QGraphicsView)
+from PySide6.QtCore import Qt, QTimer, QPointF, QObject, QEvent
+from PySide6.QtGui import QPainter, QMouseEvent, QWheelEvent
+from PySide6.QtCharts import QChart, QChartView, QValueAxis, QColorAxis
 from GUI.Signal import Signal
-from typing import List, Dict
+from typing import List
 
 class Graph(QWidget):
-    def __init__(self):
+    def __init__(self, ID:int):
         """ Construct a Graph with name if given """
         
         super().__init__()
         self.graph_layout = QVBoxLayout(self)
+        self.ID = ID
         
         #Graph states       
         self.plotting_index = 0
@@ -30,9 +32,16 @@ class Graph(QWidget):
         
         #Chart Setup;
         self.chart = QChart()
+        
         self.chart_view = QChartView(self.chart,self)
-        self.chart_view.setRubberBand(QChartView.RubberBand.RectangleRubberBand)
-        self.chart.zoom(5)
+        self.chart_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.chart_view.setMouseTracking(True)
+        self.chart_zoom_factor = 1.1
+        self.chart_view.installEventFilter(self.chart_view)
+        
+        self.chart.zoom(self.chart_zoom_factor)
+        self.chart_last_mouse_pos:QPointF = None
         self.x_axis = QValueAxis()
         self.y_axis = QValueAxis()
         self.timer = QTimer()
@@ -53,3 +62,55 @@ class Graph(QWidget):
         
         self.graph_layout.addWidget(self.graph_controls)
         self.graph_layout.addWidget(self.chart_view)
+        
+    
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if watched == self.chart_view:
+            if isinstance(event, QWheelEvent):
+                self.listen_to_chart_wheel(event)
+                return True
+            elif event.type() == QEvent.Type.MouseButtonPress:
+                self.mouse_press_event(event)
+                return True
+            elif event.type() == QEvent.Type.MouseButtonRelease:
+                self.mouse_release_event(event)
+                return True
+            elif event.type() == QEvent.Type.MouseMove:
+                self.mouse_move_event(event)
+                return True
+        return super().eventFilter(watched, event)
+    
+
+    def listen_to_chart_wheel(self, event: QWheelEvent):
+        """Handle Mouse Zooming\n
+        A zooming factor > 1 zooms in while if < 1 zooms out"""
+        if event.angleDelta().y() > 0:
+            self.chart_view.chart().zoom(self.chart_zoom_factor)
+        else:
+            self.chart_view.chart().zoom(1 / self.chart_zoom_factor)
+        
+        # Check if the left mouse button is pressed for panning
+        if self.chart_last_mouse_pos:
+            delta: QPointF = event.position() - self.chart_last_mouse_pos
+            self.chart.scroll(-delta.x(), delta.y())
+            self.chart_last_mouse_pos = event.position()
+    
+    
+    def mouse_press_event(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.chart_last_mouse_pos = event.position()
+        self.chart_view.mousePressEvent(event)
+        
+    
+    def mouse_release_event(self, event: QMouseEvent):       
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.chart_last_mouse_pos = None
+        self.chart_view.mouseReleaseEvent(event)
+        
+        
+    def mouse_move_event(self, event: QMouseEvent):        
+        if self.chart_last_mouse_pos:
+            delta: QPointF = event.position() - self.chart_last_mouse_pos
+            self.chart.scroll(-delta.x(), delta.y())
+            self.chart_last_mouse_pos = event.position()
+        self.chart_view.mouseMoveEvent(event) 
