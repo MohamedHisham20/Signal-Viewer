@@ -19,8 +19,8 @@ class ControlsWidget(QWidget):
         self.signals = []
         self.ui.signals_list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.signals_list_widget.customContextMenuRequested.connect(self.show_signal_list_context_menu)
-
-        self.ui.glue_btn.setEnabled(True)  # Set enabled when 2 signals are selected
+        self.glues =[]
+        self.ui.glue_btn.setEnabled(False)  # Set enabled when 2 signals are selected
         self.connect_all_graphs_btns()
         self.ui.report_btn.setEnabled(True)
         self.ui.report_btn.clicked.connect(self.show_report_popup)
@@ -40,12 +40,13 @@ class ControlsWidget(QWidget):
                 graph_title = graph.ui.graph_title_lbl.text()
                 add_to_graph.append(add_to_submenu.addAction(graph_title))
 
+
         menu.addMenu(add_to_submenu)
         menu.addSeparator()
         non_rect = menu.addAction("load NonRect Graph")
         report = menu.addAction("Report")
         remove = menu.addAction("Remove")
-
+        add_to_glue = menu.addAction("Add to Glue")
         action = menu.exec(self.ui.signals_list_widget.mapToGlobal(position))
 
         if action in add_to_graph:
@@ -54,6 +55,8 @@ class ControlsWidget(QWidget):
                     graph.add_signal(self.signals[self.ui.signals_list_widget.currentRow()])
         if action == non_rect:
             self.load_non_rect_graph()
+        if action == add_to_glue:
+            self.add_to_glue()
 
     def show_add_signal_context_menu(self, position):
         menu = QMenu(self)
@@ -78,13 +81,7 @@ class ControlsWidget(QWidget):
         self.add_signal(high)
         low = Signal.from_NP_array(signal['low'], 'low')
         self.add_signal(low)
-        # #add to graph
-        # self.root_widget.add_graph()
-        # graph = self.root_widget.graphs[-1]
-        # graph.add_signal(close)
-        # graph.add_signal(open)
-        # graph.add_signal(high)
-        # graph.add_signal(low)
+
 
     def load_non_rect_graph(self):
         self.non_rect_graph.signal_to_nonRect(self.signals[self.ui.signals_list_widget.currentRow()])
@@ -112,4 +109,12 @@ class ControlsWidget(QWidget):
     def show_report_popup(self):
         graph_window = GraphWindow(self.signals)
         graph_window.show()
-        graph_window.exec()
+        graph_window.exec_()
+    
+    def add_to_glue(self):
+        if len(self.glues) == 1:
+            self.ui.glue_btn.setEnabled(True)
+        elif len(self.glues) >= 2:
+            self.glues.clear()
+        self.glues.append(self.signals[self.ui.signals_list_widget.currentRow()])
+

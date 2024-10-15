@@ -123,7 +123,7 @@ class GraphController:
         graph.active = False
             
                 
-    def replay_signal(self, graph:Graph,interval:int=5):
+    def replay_signal(self, graph:Graph,interval:int=20):
         """connected with replay button"""
         
         if graph.signals_counter==0:
