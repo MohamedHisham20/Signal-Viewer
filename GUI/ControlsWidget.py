@@ -10,8 +10,9 @@ from Controllers.GlueController import GlueController
 
 
 class ControlsWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, non_rect_graph=None):
         super().__init__(parent)
+        self.non_rect_graph = non_rect_graph
         self.ui = Ui_Controls_Widget()
         self.ui.setupUi(self)
         self.root_widget = self.parent()
@@ -41,7 +42,7 @@ class ControlsWidget(QWidget):
 
         menu.addMenu(add_to_submenu)
         menu.addSeparator()
-
+        non_rect = menu.addAction("load NonRect Graph")
         report = menu.addAction("Report")
         remove = menu.addAction("Remove")
 
@@ -51,6 +52,8 @@ class ControlsWidget(QWidget):
             for graph in self.root_widget.graphs:
                 if graph.ui.graph_title_lbl.text() == action.text():
                     graph.add_signal(self.signals[self.ui.signals_list_widget.currentRow()])
+        if action == non_rect:
+            self.load_non_rect_graph()
 
     def show_add_signal_context_menu(self, position):
         menu = QMenu(self)
@@ -62,6 +65,7 @@ class ControlsWidget(QWidget):
             self.root_widget.load_signal()
         if action == from_web:
             self.load_from_web()
+        
 
     def load_from_web(self):
         signal = GlueController.real_time_signal()
@@ -81,6 +85,10 @@ class ControlsWidget(QWidget):
         # graph.add_signal(open)
         # graph.add_signal(high)
         # graph.add_signal(low)
+
+    def load_non_rect_graph(self):
+        self.non_rect_graph.signal_to_nonRect(self.signals[self.ui.signals_list_widget.currentRow()])
+
 
     def add_signal(self, signal):
         self.signals.append(signal)

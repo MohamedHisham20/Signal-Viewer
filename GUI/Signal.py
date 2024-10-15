@@ -50,7 +50,7 @@ class Signal():
 
         return Signal(data_pnts, label)
 
-
+    
     def get_y_values(self):
         y_values = []
         for pnt in self.data_pnts:
