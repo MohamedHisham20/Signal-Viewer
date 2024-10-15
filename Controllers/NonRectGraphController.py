@@ -23,6 +23,16 @@ class RadarGraph(QWidget):
         self.timer.timeout.connect(self.update_radar)
         self.timer.start(50)  # Update every 50ms
 
+    def load_data(self, data):
+        """Load signal data directly."""
+        try:
+            # Scale the signal values to fit within 360 degrees
+            scaled_data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 360
+            self.data = scaled_data
+            self.remaining_points = [(i, angle) for i, angle in enumerate(self.data)]
+        except Exception as e:
+            print(f"Error loading data: {e}")
+
     def load_data_from_csv(self, file_path):
         """Load signal data from a CSV file."""
         try:
