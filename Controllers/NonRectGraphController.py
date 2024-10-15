@@ -98,7 +98,7 @@ class RadarGraph(QFrame):
         for i, point_angle in to_hit:
             # Calculate position for the hit points
             distance = np.random.randint(30, self.radius)
-            scaled_distance = distance * (min(self.width(), self.height()) / 400)  # Scale with window size
+            scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
             x = self.width() // 2 + scaled_distance * np.cos(np.radians(point_angle))
             y = self.height() // 2 - scaled_distance * np.sin(np.radians(point_angle))
 

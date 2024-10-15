@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
+from PySide6.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
                              QDialog, QFileDialog, QInputDialog)
 import pyqtgraph as pg
 from reportlab.lib.pagesizes import letter
