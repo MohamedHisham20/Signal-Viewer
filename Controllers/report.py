@@ -141,9 +141,7 @@ class ReportWindow(QDialog):
         # Add a text area for the user to write the report
         self.report_text = QTextEdit(self)
         self.report_text.setPlaceholderText("Write your report here...")
-        # self.report_text.setSizePolicy(self.report_text.sizePolicy().horizontalPolicy(),
-        #                                QSizePolicy.)  # Stretchable
-
+        self.report_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addWidget(self.report_text)
 
         # Display the cropped data as graphs
@@ -179,15 +177,32 @@ class ReportWindow(QDialog):
             c = canvas.Canvas(file_name, pagesize=letter)
             width, height = letter
 
-            # Write the report text on the PDF
-            c.drawString(100, height - 100, "User Report:")
+            # Add a logo (make sure to replace 'logo.png' with your actual logo file)
+            logo_path = "D:/Eng/SBE/3rd/DSP/Signal-Viewer/Controllers/logo.png"
+            if os.path.exists(logo_path):
+                c.drawImage(logo_path, 30, height - 60, width=100, height=50)  # Adjust size/position of logo
+
+            # Add a header
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(150, height - 50, "User Report")
+
+            # Draw a line below the header
+            c.line(30, height - 60, width - 30, height - 60)
+
+            # Write the report text on the PDF with a border around it
+            c.setFont("Helvetica", 12)
+            c.drawString(100, height - 90, "Report Content:")
             text_lines = report_text.split('\n')
             y_pos = height - 120
+
+            # Add text content with a subtle border
+            c.rect(80, y_pos + 20 , width - 160, -(len(text_lines) * 15 + 20))  # Border for the text area
             for line in text_lines:
                 c.drawString(100, y_pos, line)
                 y_pos -= 15
 
-            c.drawString(100, y_pos - 10, "Graphs of the cropped data:")
+            y_pos -= 30
+            c.drawString(100, y_pos, "Graphs of the cropped data:")
             y_pos -= 40
 
             # Save each graph as an image and add it to the PDF
@@ -209,23 +224,26 @@ class ReportWindow(QDialog):
 
                 # Load the image and draw it on the PDF
                 c.drawImage(image_path, 100, y_pos - 150, width=300, height=150)
-                # Remove the image file after drawing it
-                os.remove(image_path)
+                os.remove(image_path)  # Remove the image file after drawing it
 
-                # Add label to the graph
-                c.drawString(100, y_pos - 160, f"Graph {idx + 1}")
-                c.drawString(100, y_pos - 180,
+                # Add label and statistics for the graph, with a border
+                c.rect(90, y_pos - 180, 320, 30)  # Draw a border around the label
+                c.drawString(100, y_pos - 170, f"Graph {idx + 1}")
+                c.drawString(100, y_pos - 200,
                              f"Mean: {mean:.2f}, Std: {std:.2f}, Max: {max_point:.2f}, Min: {min_point:.2f}")
-                y_pos -= 200  # Move down to leave space for next image
+                y_pos -= 220  # Move down to leave space for next image
 
                 if y_pos < 150:
                     c.showPage()  # Create a new page if needed
-                    y_pos = height - 100  # Reset y position
+                    y_pos = height - 60  # Reset y position
+
+            # Add a footer with page numbers
+            c.setFont("Helvetica", 10)
+            c.drawString(width - 100, 50, "Page 1")  # Adjust as needed for multiple pages
 
             # Save the PDF
             c.save()
             print(f"Report saved to {file_name}")
-
 
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)

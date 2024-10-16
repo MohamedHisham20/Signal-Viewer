@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from PySide6.QtCore import Qt, QTimer, QPoint
-from PySide6.QtGui import QPainter, QPen, QFont, QBrush
+from PySide6.QtGui import QPainter, QPen, QFont, QBrush, QColor
 from PySide6.QtWidgets import QVBoxLayout, QPushButton, QScrollBar, QHBoxLayout, QFileDialog, QFrame
 
 
@@ -130,6 +130,15 @@ class RadarGraph(QFrame):
 
         qp.drawEllipse(center_x - radar_radius, center_y - radar_radius, radar_radius * 2, radar_radius * 2)
 
+        # Draw the radar axes (radial lines) and angle labels
+        gray_color = QColor(128, 128, 128, 128)  # RGB values for gray and alpha value for transparency
+        qp.setPen(QPen(gray_color, 2))
+
+        # Draw concentric circles
+        for i in reversed(range(1, 4)):  # Adjust the range for more or fewer circles
+            radius = radar_radius / 4 * i  # Calculate the radius for each circle
+            qp.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
+
         # Draw the radar sweep (rotating line)
         qp.setPen(QPen(Qt.red, 2))
         x = center_x + radar_radius * np.cos(np.radians(self.radar_angle))
@@ -137,9 +146,10 @@ class RadarGraph(QFrame):
         qp.drawLine(center_x, center_y, int(x), int(y))
 
         # Draw the axes (radial lines) and angle labels
-        qp.setPen(QPen(Qt.black, 1))
+        qp.setPen(QPen(gray_color, 1))
         font = QFont("Arial", 8)
         qp.setFont(font)
+
 
         for angle in range(0, 360, 30):  # Draw axes every 30 degrees
             # Calculate the end point of the axis line
@@ -152,6 +162,7 @@ class RadarGraph(QFrame):
                 np.radians(angle))  # Adjust the position slightly for the label
             label_y = center_y - (radar_radius + 20) * np.sin(np.radians(angle))
             qp.drawText(int(label_x) - 10, int(label_y) + 5, f"{angle}°")
+
 
         # Draw lines between consecutive hit points
         if len(self.hit_points) > 1:
