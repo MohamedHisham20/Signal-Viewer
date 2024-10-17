@@ -5,7 +5,6 @@ from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPainter, QPen, QFont, QBrush, QColor
 from PySide6.QtWidgets import QVBoxLayout, QPushButton, QScrollBar, QHBoxLayout, QFileDialog, QFrame
 
-
 from GUI import Signal
 
 
@@ -51,14 +50,19 @@ class RadarGraph(QFrame):
         """Update the radar sweep and check for 'hits'."""
         # Increment the radar angle
         self.radar_angle += self.radar_speed
+        # Reset the radar angle if it exceeds 360 degrees
         if self.radar_angle >= 360:
-            self.radar_angle = 0
-            self.hit_points.clear()  # Clear only hit points
-            self.prev_hit_point = None
+            self.start_over()
+        else:
+            self.update_hit_points()  # Update the hit points based on the current radar angle
+            self.update()  # Trigger a repaint
 
-            # Here you might want to reset remaining points or ensure they still represent the current data
-            self.remaining_points = [(i, angle) for i, angle in enumerate(np.linspace(0, 360, len(self.data)))]
-
+    def start_over(self):
+        self.radar_angle = 0
+        self.hit_points.clear()  # Clear only hit points
+        self.prev_hit_point = None
+        # Here you might want to reset remaining points or ensure they still represent the current data
+        self.remaining_points = [(i, angle) for i, angle in enumerate(np.linspace(0, 360, len(self.data)))]
         self.update_hit_points()  # Update the hit points based on the current radar angle
         self.update()  # Trigger a repaint
 
@@ -150,7 +154,6 @@ class RadarGraph(QFrame):
         font = QFont("Arial", 8)
         qp.setFont(font)
 
-
         for angle in range(0, 360, 30):  # Draw axes every 30 degrees
             # Calculate the end point of the axis line
             x_axis = center_x + radar_radius * np.cos(np.radians(angle))
@@ -162,7 +165,6 @@ class RadarGraph(QFrame):
                 np.radians(angle))  # Adjust the position slightly for the label
             label_y = center_y - (radar_radius + 20) * np.sin(np.radians(angle))
             qp.drawText(int(label_x) - 10, int(label_y) + 5, f"{angle}°")
-
 
         # Draw lines between consecutive hit points
         if len(self.hit_points) > 1:
@@ -190,17 +192,26 @@ class NonRectGraph(QFrame):
         self.play_button.clicked.connect(self.play_radar)
         self.pause_button.clicked.connect(self.pause_radar)
 
+        self.rewind_button = QPushButton("Rewind")
+        self.rewind_button.clicked.connect(self.rewind_radar)
+
         self.load_csv_button = QPushButton("Load CSV")
         self.load_csv_button.clicked.connect(self.load_csv)
 
         self.load_y_axis_button = QPushButton("Load Y Axis")
         self.load_y_axis_button.clicked.connect(self.signal_to_nonRect)
 
-        self.scroll_bar = QScrollBar(Qt.Horizontal)
-        self.scroll_bar.setMinimum(0)
-        self.scroll_bar.setMaximum(360)
-        self.scroll_bar.setValue(0)
-        self.scroll_bar.sliderMoved.connect(self.scroll_radar)
+        self.scroll_panning = QScrollBar(Qt.Horizontal)
+        self.scroll_panning.setMinimum(0)
+        self.scroll_panning.setMaximum(360)
+        self.scroll_panning.setValue(0)
+        self.scroll_panning.sliderMoved.connect(self.scroll_radar)
+
+        self.scroll_speed = QScrollBar(Qt.Horizontal)
+        self.scroll_speed.setMinimum(1)
+        self.scroll_speed.setMaximum(30)
+        self.scroll_speed.setValue(1)
+        self.scroll_speed.sliderMoved.connect(self.change_speed)
 
         layout = QVBoxLayout()
         layout.addWidget(self.radar_widget)
@@ -208,10 +219,12 @@ class NonRectGraph(QFrame):
         controls_layout = QHBoxLayout()
         controls_layout.addWidget(self.play_button)
         controls_layout.addWidget(self.pause_button)
-        controls_layout.addWidget(self.load_csv_button)
+        # controls_layout.addWidget(self.load_csv_button)
+        controls_layout.addWidget(self.rewind_button)
         controls_layout.addWidget(self.load_y_axis_button)
         layout.addLayout(controls_layout)
-        layout.addWidget(self.scroll_bar)
+        layout.addWidget(self.scroll_panning)
+        layout.addWidget(self.scroll_speed)
 
         self.setLayout(layout)
 
@@ -221,8 +234,14 @@ class NonRectGraph(QFrame):
     def pause_radar(self):
         self.radar_widget.timer.stop()
 
+    def rewind_radar(self):
+        self.radar_widget.start_over()
+
     def scroll_radar(self, value):
         self.radar_widget.scroll_radar_angle(value)
+
+    def change_speed(self, value):
+        self.radar_widget.radar_speed = value
 
     def load_csv(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load CSV", "", "CSV Files (*.csv)")
