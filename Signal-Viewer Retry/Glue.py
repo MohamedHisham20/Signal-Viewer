@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-def glue_signals(signal1: Signal, signal2: Signal, interpolation_degree=1):
+def glue_signals(signal1: Signal, signal2: Signal, interpolation_order=1):
     signal1_df = pd.DataFrame(signal1.data_pnts, columns=['x', 'y'])
     signal2_df = pd.DataFrame(signal2.data_pnts, columns=['x', 'y'])
 
@@ -74,7 +74,7 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
 
     # Ensure there is a gap
     if gap_start >= gap_end:
-        return pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
+        return Signal.from_pd_df(pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True))
 
     coefficients_1 = np.polyfit(signal1_df['x'], signal1_df['y'], interpolation_degree)
     coefficients_2 = np.polyfit(signal2_df['x'], signal2_df['y'], interpolation_degree)
@@ -91,5 +91,3 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
     result = pd.concat([signal1_df, gap_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
 
     return Signal.from_pd_df(result)
-
-

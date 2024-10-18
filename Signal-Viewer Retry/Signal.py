@@ -55,22 +55,15 @@ class Signal:
         return Signal(data_pnts, label)
 
     @staticmethod
-    def from_pd_df(df):
+    def from_pd_df(df, x_col='x', y_col='y'):
         Signal.glued_signal_counter += 1
         data_pnts = []
         for row in df.iterrows():
-            x, y = row[0], row[1]
+            x, y = row[1][x_col], row[1][y_col]
             data_pnts.append((x, y))
 
         label = "Glued_Signal_" + str(Signal.glued_signal_counter)
         return Signal(data_pnts, label)
-
-    
-    def get_y_values(self):
-        y_values = []
-        for pnt in self.data_pnts:
-            y_values.append(pnt[1])
-        return y_values
 
     def append_point(self, x, y):
         self.data_pnts.append((x, y))
@@ -81,3 +74,9 @@ class Signal:
             return 0
         time_diffs = np.diff([x for x, y in self.data_pnts])
         return 1 / np.mean(time_diffs)
+
+    def get_x_values(self):
+        return [pnt[0] for pnt in self.data_pnts]
+
+    def get_y_values(self):
+        return [pnt[1] for pnt in self.data_pnts]
