@@ -13,12 +13,15 @@ def glue_signals(signal1: Signal, signal2: Signal, interpolation_degree=1):
 
     # Handle single point signals
     if len(signal1_df) <= 1 and len(signal2_df) <= 1:
-        return pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
+        result = pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
+        return Signal.from_pd_df(result)
 
     if len(signal1_df) <= 1:
-        return signal2_df.reset_index(drop=True)
+        result = signal2_df.reset_index(drop=True)
+        return Signal.from_pd_df(result)
     if len(signal2_df) <= 1:
-        return signal1_df.reset_index(drop=True)
+        result = signal1_df.reset_index(drop=True)
+        return Signal.from_pd_df(result)
 
     overlap_start = max(signal1_df['x'].min(), signal2_df['x'].min())
     overlap_end = min(signal1_df['x'].max(), signal2_df['x'].max())
