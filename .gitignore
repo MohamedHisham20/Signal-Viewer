@@ -20,3 +20,10 @@ GUI/graph_widget/.qtcreator/
 GUI/graph_widget/graph_widget.pyproject
 GUI/graph_widget/graph_widget.pyproject.user
 sin_generator.py
+Signal-Viewer Retry/.env
+Signal-Viewer Retry/5000 ecgs.csv
+Signal-Viewer Retry/ecg selector.py
+Signal-Viewer Retry/random_ecg_files/
+Signal-Viewer Retry/data.csv
+Signal-Viewer Retry/ecg divider.py
+Signal-Viewer Retry/ecg plotter.py
