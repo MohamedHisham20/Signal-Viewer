@@ -7,11 +7,9 @@ from typing import List, Dict
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from GUI.Graph import Graph
-from GUI.Signal import Signal
-              
+from GUI.Graph import Graph, Signal
 
-                       
+                               
 class GraphController():
     """Methods marked with double underscore (__) as a prefix
     are of internal behaviour and should not be accessed by other developers
@@ -24,22 +22,7 @@ class GraphController():
         self.controlled_graphs: List[Graph] = []
             
     
-    def mount_btns_actions(self, graph:Graph):
-        """This method has to be called immediately after constructing a graph\n
-        to mount action on buttons"""
-        
-        self.controlled_graphs.append(graph)
-        
-        graph.play_pause_btn.clicked.connect(lambda:self.toggle_play_pause_btn(graph.ID))
-        graph.replay_btn.clicked.connect(lambda:self.replay_signal(graph.ID))
-        graph.reset_btn.clicked.connect(lambda:self.reset_graph(graph.ID))
-        graph.zoom_in_btn.clicked.connect(lambda:self.zoom_in(graph.ID))
-        graph.zoom_out_btn.clicked.connect(lambda:self.zoom_out(graph.ID))
-        graph.speed_up_btn.clicked.connect(lambda:self.increase_plotting_speed(graph.ID))
-        graph.slow_down_btn.clicked.connect(lambda:self.decrease_plotting_speed(graph.ID))
-        graph.select_signal_part_btn.clicked.connect(lambda: self.signal_part_selection_requested(graph.ID))
-        
-        graph.timer.timeout.connect(lambda: self.plot_signals(graph))
+
             
     
     def get_graph(self, graph_id:int):
@@ -90,28 +73,7 @@ class GraphController():
                 else: return                
                 
         
-    def toggle_play_pause_btn(self, graph_id:int):
-        """Cotrols playing and pausing\n
-        connected to play and pause button\n
-        this method is connected to play_loaded_signals method"""
-        
-        graph = graph = self.get_graph(graph_id)
-        
-        if graph.signals_counter == 0: 
-            print("Graph is empty. Add a signal first")
-            return        
-            
-        if graph.timer.isActive():
-            graph.timer.stop()
-            graph.play_pause_btn.setText("play")
-            
-        else:
-            if graph.plotting_index > 0:
-                graph.timer.start(graph.timer.interval())
-                graph.play_pause_btn.setText("pause")
-            else:
-                graph.play_pause_btn.setText("pause")
-                self.get_chart_ready(graph)    
+    
 
                     
     def get_chart_ready(self, graph:Graph, interval:int = 20):

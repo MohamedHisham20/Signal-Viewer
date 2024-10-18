@@ -1,148 +1,227 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout,
-QHBoxLayout, QPushButton ,QGraphicsView, QRubberBand)
-from PySide6.QtCore import Qt, QTimer, QPointF, QObject, QEvent, QRect, QSizeF
-from PySide6.QtGui import QPainter, QMouseEvent, QWheelEvent
-from PySide6.QtCharts import QChart, QChartView, QValueAxis, QColorAxis, QLineSeries
-from GUI.Signal import Signal
-from typing import List, Dict
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QPushButton, QWidget, QVBoxLayout, QHBoxLayout
+from PyQt5.QtCore import Qt, QTimer, QPointF
+from PyQt5.QtGui import QPen
+from typing import List, Dict, Tuple
+import sys
+import os
+import numpy as np
 
-class Graph(QGraphicsView):
-    def __init__(self, ID:int):
-        """ Construct a Graph with name if given """
-        
-        super().__init__()
-        self.graph_layout = QVBoxLayout(self)
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
+
+class Signal():
+    def __init__(self, ID:int, x_pnts:list, y_pnts:List):
         self.ID = ID
+        self.X = x_pnts 
+        self.Y = y_pnts
         
-        #Graph states       
-        self.plotting_index = 0
-        self.signals_counter = 0
-        self.active = False
-        self.signal_part_selection_requested = False
+
+class Graph(QWidget):
+    def __init__(self, ID:int, label:str=None):    
+        super().__init__()
+        self.show() 
+        #self.setGeometry(500, 0, 200, 200)
+        self.setWindowTitle(label)
         
-        #Container for graph controls
-        self.graph_controls = QWidget(self)
-        self.graph_controls_layout = QHBoxLayout(self.graph_controls)
-        self.play_pause_btn = QPushButton("play",self)
-        self.replay_btn = QPushButton("replay",self)
-        self.zoom_in_btn = QPushButton("zoom in",self)
-        self.zoom_out_btn = QPushButton("zoom out",self)
-        self.speed_up_btn = QPushButton("speed up",self)
-        self.slow_down_btn = QPushButton("slow down",self)
-        self.reset_btn = QPushButton("reset",self)
-        self.select_signal_part_btn = QPushButton("select signal part", self)   
-        
-        #Chart Setup;
-        self.chart = QChart()
-        self.chart_origin = QPointF()
-        
-        self.chart_view = QChartView(self.chart,self)
-        self.chart_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-        self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.chart_view.setMouseTracking(False)
-        self.chart_zoom_factor = 1.1
-        self.chart_view.installEventFilter(self)
-        self.chart_view_selection_band = QRubberBand(QRubberBand.Shape.Rectangle, self.chart_view)
-        
-        self.chart.zoom(self.chart_zoom_factor)
-        self.chart_last_mouse_pos:QPointF = None
-        self.x_axis = QValueAxis()
-        self.y_axis = QValueAxis()
+        self.ID = ID
+        self.plotArea = pg.PlotWidget()
+        self.internalLayout = QVBoxLayout(self)
+        self.controllers = QWidget()
+        self.controllersLayout = QHBoxLayout(self.controllers)
         self.timer = QTimer()
-        self.timer.setInterval(20)
-        self.delta_interval = 0.2 #default change in timer interval
-        self.min_plotting_interval = 5 # corresponds to fastest plotting
-        self.max_plotting_interval = 50 # corresponds to slowest plotting
+        self.timer.timeout.connect(self.plotSignals)
+        self.deltaInterval = 10
+        self.minInterval = 10
+        self.maxInterval = 100
+        self.timer.setInterval(50)
         self.signals: List[Signal] = []
-        self.selected_signals_parts: Dict[int: List[QPointF]]  = {}
-                
-        #Layout setup
-        self.graph_controls_layout.addWidget(self.play_pause_btn)
-        self.graph_controls_layout.addWidget(self.replay_btn)
-        self.graph_controls_layout.addWidget(self.reset_btn)
-        self.graph_controls_layout.addWidget(self.zoom_in_btn)
-        self.graph_controls_layout.addWidget(self.zoom_out_btn)
-        self.graph_controls_layout.addWidget(self.speed_up_btn)
-        self.graph_controls_layout.addWidget(self.slow_down_btn)
-        self.graph_controls_layout.addWidget(self.select_signal_part_btn)
         
-        self.graph_layout.addWidget(self.graph_controls)
-        self.graph_layout.addWidget(self.chart_view)
+        #Self States
+        self.plottingIndex = 0
+        self.selectionRequested = False
+        self.plottingStarted = False
+        self.minYFromSignals = 0
+        self.MaxYFromSignals = 0
+        self.maxXFromSignals = 0
+        self.maxXPerCurrPlottingIndex =0
+        self.allSignalsPlotted = False
+
+        #Plot Widget Setup
+        self.plotItem = self.plotArea.plotItem
+        self.viewBox= self.plotArea.plotItem.getViewBox()
+        self.plotItem.setTitle(title=label)
+        self.plotItem.showGrid(x=True, y=True)
+        self.plotItem.setLabel(axis='left', text="Y-Axis")
+        self.plotItem.setLabel(axis='bottom', text="X-Axis")
+        self.viewBox.setAutoPan(x=True, y=True)
+        self.viewBox.setMouseEnabled(x=True, y=True)
+        self.viewBox.enableAutoRange()
+        self.viewBox.setDefaultPadding(0.2)
+        self.viewBox.setRange(yRange=[self.minYFromSignals, self.MaxYFromSignals], disableAutoRange=False)
+        self.ROI = pg.RectROI(pos=[0,0], size=[0,0])
+        self.ROI.setPen(width=4.5, color="#16adee")
+        self.plotItem.addItem(self.ROI)
+        self.ROI.sigRegionChanged.connect(self.selectSignalPoints)
         
+        # Controllers Setup
+        self.playPauseBtn = QPushButton("play",self)
+        self.replayBtn = QPushButton("replay",self)
+        self.speedUpBtn = QPushButton("speed up",self)
+        self.slowDownBtn = QPushButton("slow down",self)
+        
+        # LayoutSetup
+        self.controllersLayout.addWidget(self.playPauseBtn)
+        self.controllersLayout.addWidget(self.replayBtn)
+        self.controllersLayout.addWidget(self.speedUpBtn)
+        self.controllersLayout.addWidget(self.slowDownBtn)
+        
+        self.layout().addWidget(self.plotArea)
+        self.layout().addWidget(self.controllers)
+        
+        self.mountBtnsActions()
+        
+        
+    def addSignal(self, signal:Signal):
+        self.signals.append(signal)
+        signal_item = pg.PlotDataItem([], [])
+        signal_item.opts["name"] = str(signal.ID)
+        self.plotArea.plotItem.addItem(signal_item)
+        
+        self.minYFromSignals = min(min(signal.Y), self.minYFromSignals)
+        self.MaxYFromSignals = max(max(signal.Y), self.MaxYFromSignals)
+        self.maxXFromSignals = max(max(signal.X), self.maxXFromSignals)
+
+           
+    def getSignal(self, signalID:str):
+        for index, signal in enumerate(self.signals):
+            if signalID == str(signal.ID):
+                    return index, signal
     
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if watched == self.chart_view:
-            if isinstance(event, QWheelEvent):
-                self.listen_to_chart_wheel(event)
-                return True
-            elif event.type() == QEvent.Type.MouseButtonPress:
-                self.mouse_press_event(event)
-                return True
-            elif event.type() == QEvent.Type.MouseButtonRelease:
-                self.mouse_release_event(event)
-                return True
-            elif event.type() == QEvent.Type.MouseMove:
-                self.mouse_move_event(event)
-                return True
-        return super().eventFilter(watched, event)
     
- 
-    def listen_to_chart_wheel(self, event: QWheelEvent):
-        """Handle Mouse Zooming\n
-        A zooming factor > 1 zooms in while if < 1 zooms out"""
-        if event.angleDelta().y() > 0:
-            self.chart_view.chart().zoom(self.chart_zoom_factor)
+    def deleteSignalFromGraph(self, signalID:str):
+        index, signal = self.getSignal(signalID)
+        for signal_item in self.plotArea.plotItem.dataItems:
+            if isinstance(signal_item, pg.PlotDataItem):
+                if signal_item.name() == signalID:
+                    self.plotArea.plotItem.removeItem(signal_item) 
+        self.signals.remove(signal)
+    
+                                    
+    def clearDataItems(self):
+        for signal_item in self.plotArea.plotItem.dataItems:
+            if isinstance(signal_item, pg.PlotDataItem):
+                signal_item.clear()
+    
+    
+    def togglePlayPauseBtn(self):
+        """Cotrols playing and pausing\n
+        connected to play and pause button\n"""
+        
+        if len(self.signals) == 0: 
+            print("Graph is empty. Add a signal first")
+            return        
+            
+        self.playPauseBtn.show()
+        if self.timer.isActive():
+            self.timer.stop()
+            self.playPauseBtn.setText("play")
         else:
-            self.chart_view.chart().zoom(1 / self.chart_zoom_factor)
-        
-        # Check if the left mouse button is pressed for panning
-        if self.chart_last_mouse_pos:
-            delta: QPointF = event.position() - self.chart_last_mouse_pos
-            self.chart.scroll(-delta.x(), delta.y())
-            self.chart_last_mouse_pos = event.position()
-    
-    
-    def mouse_press_event(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.chart_origin = self.chart_last_mouse_pos = event.position()
+            self.playPauseBtn.setText("pause")
+            self.timer.start(self.timer.interval())
             
-            if self.signal_part_selection_requested:
-                self.chart_view.setMouseTracking(True)
-                self.chart_view_selection_band.show()                 
-                self.chart_view_selection_band.setGeometry(QRect(self.chart_origin, QSizeF()))
-                self.chart_view_selection_band.show()
-            
-        self.chart_view.mousePressEvent(event)
-        
-    
-    def mouse_release_event(self, event: QMouseEvent):       
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.chart_last_mouse_pos = None
-            
-            if self.signal_part_selection_requested:
-                self.chart_view_selection_band.hide()
-                self.extract_pnts(self.chart_view_selection_band.geometry())
+            if self.plottingStarted==False: 
+                self.clearDataItems()
+                self.allSignalsPlotted = False
+                self.plottingIndex = 0
+                self.plottingStarted = True
+                self.plotSignals()
                 
-        self.chart_view.mouseReleaseEvent(event)
+    
+    def plotSignals(self):
+        self.viewBox.setLimits(xMin=0, xMax=self.maxXFromSignals, yMin=self.minYFromSignals, yMax=self.MaxYFromSignals)
         
+        allPlotted = True
+        for index, signal_item in enumerate(self.plotArea.plotItem.dataItems):
+            if isinstance(signal_item, pg.PlotDataItem):  
+                if self.plottingIndex < len(self.signals[index].X):
+                    signal_item.setData(self.signals[index].X[:self.plottingIndex], self.signals[index].Y[:self.plottingIndex])
+                    self.maxXPerCurrPlottingIndex = max(self.signals[index].X[self.plottingIndex], self.maxXPerCurrPlottingIndex)
+                    allPlotted = False
+        self.plottingIndex += 1
+        if allPlotted:
+            self.timer.stop()
+            self.plottingStarted = True
+            self.playPauseBtn.hide()
+            
+            
+    def replay(self):
+        """clear plotted signals to start plotting again automatically\n
+        for clearing graph and replaying upon user pressing play again:\n
+        see resetGraph method"""
+        if not self.plottingStarted or len(self.signals)==0:
+            return
         
-    def mouse_move_event(self, event: QMouseEvent):        
-        if self.signal_part_selection_requested:
-            self.chart_view_selection_band.setGeometry(QRect(self.origin, event.position()).normalized())
+        self.timer.stop()
+        self.plottingStarted = False
+        self.togglePlayPauseBtn()
+    
+    
+    def resetGraph(self):
+        """clear plotted signals to start plotting again\n
+        won't start unless play is pressed again"""
         
-        elif self.chart_last_mouse_pos:
-            delta: QPointF = event.position() - self.chart_last_mouse_pos
-            self.chart.scroll(-delta.x(), delta.y())
-            self.chart_last_mouse_pos = event.position()
-        self.chart_view.mouseMoveEvent(event) 
-
-
-    def extract_pnts(self, selected_rect):
-        selected_rect = self.mapToScene(selected_rect).boundingRect()
-        for i, series in enumerate(self.chart_view.chart().series()):
-            list = self.selected_signals_parts[i]
-            if isinstance(series, QLineSeries):
-                for point in series.pointsVector():
-                    if selected_rect.contains(point):
-                        if isinstance(list, List[QPointF]):
-                            list.append(point)
+        if not self.plottingStarted or len(self.signals)==0:
+            return
+        
+        self.timer.stop()
+        self.plottingStarted = False
+    
+    
+    def increasePlottingSpeed(self):
+        currentInterval = self.timer.interval()
+        newInterval = min(self.minInterval, currentInterval-self.deltaInterval)
+        self.timer.setInterval(newInterval)
+        
+    
+    def decreasePlottingSpeed(self):
+        currentInterval = self.timer.interval()
+        newInterval = max(self.maxInterval, currentInterval + self.deltaInterval)
+        self.timer.setInterval(newInterval)
+            
+    
+    def restrictPanningAndZooming(self):
+        self.viewBox.setLimits(xMax=self.maxXPerCurrPlottingIndex, 
+        maxXRange=self.maxXPerCurrPlottingIndex)    
+    
+    
+    def selectSignalPoints(self):
+        selected_signal_item = self.plotArea.plotItem.dataItems[0]
+        if isinstance(selected_signal_item, pg.PlotDataItem):
+            xPnts = list(selected_signal_item.xData)
+            yPnts = list(selected_signal_item.yData)
+            
+        pnts: List[Tuple] = []
+        for i, x in enumerate(xPnts):
+            pnts[i] = x,yPnts[i]
+        
+        ROIBounds = self.ROI.boundingRect()
+        xLeft = ROIBounds.left()
+        xRight = ROIBounds.right()
+        yBottom = ROIBounds.bottom()
+        yTop = ROIBounds.top()
+        
+        selectedPnts: list[QPointF] = []
+        
+        for pnt in pnts:
+            x, y = pnt.x(), pnt.y()
+            if (x<=xLeft and x>=xRight) and (y<=yTop and y>=yBottom):       
+                selectedPnts.append(pnt)    
+                
+                
+    def mountBtnsActions(self):        
+        self.playPauseBtn.clicked.connect(self.togglePlayPauseBtn)
+        self.replayBtn.clicked.connect(self.replay)
+        self.speedUpBtn.clicked.connect(self.increasePlottingSpeed)
+        self.slowDownBtn.clicked.connect(self.decreasePlottingSpeed)                                          
