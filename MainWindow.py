@@ -9,6 +9,8 @@
 
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt, QMimeData
+from PySide6.QtWidgets import QListWidget, QHBoxLayout, QWidget, QPushButton
 from styleSheet import styleSheet
 
 class Ui_MainWindow(object):
@@ -336,15 +338,13 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.addLayout(self.horizontalLayout_2)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.C1_list = QtWidgets.QListWidget(self.all_channels)
+        self.C1_list = DragDropList(self.all_channels)
         self.C1_list.setObjectName("C1_list")
-        item = QtWidgets.QListWidgetItem()
-        self.C1_list.addItem(item)
         self.horizontalLayout.addWidget(self.C1_list)
-        self.C2_list = QtWidgets.QListView(self.all_channels)
+        self.C2_list = DragDropList(self.all_channels)
         self.C2_list.setObjectName("C2_list")
         self.horizontalLayout.addWidget(self.C2_list)
-        self.C3_list = QtWidgets.QListView(self.all_channels)
+        self.C3_list = DragDropList(self.all_channels)
         self.C3_list.setObjectName("C3_list")
         self.horizontalLayout.addWidget(self.C3_list)
         self.verticalLayout_13.addLayout(self.horizontalLayout)
@@ -530,11 +530,11 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "C1"))
         self.label_2.setText(_translate("MainWindow", "C2"))
         self.label_3.setText(_translate("MainWindow", "C3"))
-        __sortingEnabled = self.C1_list.isSortingEnabled()
-        self.C1_list.setSortingEnabled(False)
-        item = self.C1_list.item(0)
-        item.setText(_translate("MainWindow", "signal1"))
-        self.C1_list.setSortingEnabled(__sortingEnabled)
+        # __sortingEnabled = self.C1_list.isSortingEnabled()
+        # self.C1_list.setSortingEnabled(False)
+        # item = self.C1_list.item(0)
+        # item.setText(_translate("MainWindow", "signal1"))
+        # self.C1_list.setSortingEnabled(__sortingEnabled)
         self.Channels.setTabText(self.Channels.indexOf(self.all_channels), _translate("MainWindow", "All"))
         self.crop_label.setText(_translate("MainWindow", "Crop"))
         self.crop_Choose_label.setText(_translate("MainWindow", "Choose Signal"))
@@ -554,3 +554,58 @@ class Ui_MainWindow(object):
         self.C3_graph_label.setText(_translate("MainWindow", "TextLabel"))
 
 
+class DragDropList(QListWidget):
+    def __init__(self,parent = None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragEnabled(True)
+        self.setDropIndicatorShown(True)
+        self.objects = []
+
+
+    
+    def addItems(self, items):
+        for item in items:
+            self.addItem(item)
+
+    def mimeData(self, items):
+        mime_data = QMimeData()
+        text = "\n".join(item.text() for item in items)
+        mime_data.setText(text)
+        return mime_data
+
+    def dropEvent(self, event):
+        # Accept the event
+        if event.mimeData().hasText():
+            items = event.mimeData().text().split("\n")
+            self.addItems(items)
+            event.accept()
+
+            # Remove the items from the source list
+            source = event.source()
+            for item in items:
+                matching_items = source.findItems(item, Qt.MatchExactly)
+                if matching_items:
+                    source.takeItem(source.row(matching_items[0]))
+
+            # Print the items in the new list
+            
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        # Accept the drag if it's a text item
+        if event.mimeData().hasText():
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragEnterEvent(self, event):
+        # Accept the drag if it's a text item
+        if event.mimeData().hasText():
+            event.accept()
+        else:
+            event.ignore()
+
+    def get_items(self):
+        return [self.item(i).text() for i in range(self.count())]

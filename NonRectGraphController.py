@@ -108,7 +108,9 @@ class RadarGraph(QFrame):
 
     def calculate_xy(self, i, angle):
         """Calculate x, y coordinates for a point (i, angle) based on radar dimensions."""
-        distance = self.radius * (self.data[i] / 360)  # Scale based on the angle data
+        # Normalize the y value to be between 0 and 1
+        normalized_y = (self.data[i] - np.min(self.data)) / (np.max(self.data) - np.min(self.data))
+        distance = self.radius / 1.3 * normalized_y  # Scale based on the normalized data
         scaled_distance = distance * (min(self.width(), self.height()) / 250)  # Scale with window size
         x = self.width() // 2 + scaled_distance * np.cos(np.radians(angle))
         y = self.height() // 2 - scaled_distance * np.sin(np.radians(angle))
