@@ -1,16 +1,11 @@
+from PyQt5 import QtCore, QtGui, QtWidgets
+from MainWindow import Ui_MainWindow
+
+
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel , QPushButton
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Task1")
-        self.setGeometry(100, 100, 800, 600)
-        #add lable
-        self.label = QLabel("Hello World",self)
-        self.btn = QPushButton("click" , self)
-
-
-
-
+app = QtWidgets.QApplication(sys.argv)
+MainWindow = QtWidgets.QMainWindow()
+ui = Ui_MainWindow()
+ui.setupUi(MainWindow)
+MainWindow.show()
+sys.exit(app.exec_())
