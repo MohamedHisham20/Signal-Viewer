@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt, QMimeData
 
 from GUI.UI.UI_graph_widget import Ui_graph_widget
 from GUI.UI.Graph import Graph
+from GUI.UI.NewGraph import NewGraph
 from Controllers.GraphController import GraphController
 
 
@@ -22,9 +23,11 @@ class GraphWidget(QWidget):
         self.ChangeOrder = 'no'
         self.graphController = GraphController()
         self.graph = Graph()
+        self.new_graph = NewGraph()
         if self.ui.graph_placeholder.layout() is None:
             self.ui.graph_placeholder.setLayout(QVBoxLayout())
-        self.ui.graph_placeholder.layout().addWidget(self.graph)
+        # self.ui.graph_placeholder.layout().addWidget(self.graph)
+        self.ui.graph_placeholder.layout().addWidget(self.new_graph)
         self.swapAction = lambda: None
 
         GraphWidget.instance_count += 1
@@ -39,6 +42,7 @@ class GraphWidget(QWidget):
         self.connect_buttons()
 
     def connect_buttons(self):
+        # Change this
         self.ui.pause_play_btn.clicked.connect(lambda: self.toggle_pause_play())
         self.ui.speed_up_btn.clicked.connect(lambda: self.graphController.increase_plotting_speed(self.graph))
         self.ui.slow_down_btn.clicked.connect(lambda: self.graphController.decrease_plotting_speed(self.graph))
@@ -85,13 +89,17 @@ class GraphWidget(QWidget):
         elif action == pause_play:
             self.toggle_pause_play()
         elif action == speed_up:
-            self.graphController.increase_plotting_speed(self.graph)
+            # self.graphController.increase_plotting_speed(self.graph)
+            self.new_graph.speed_up()
         elif action == slow_down:
-            self.graphController.decrease_plotting_speed(self.graph)
+            # self.graphController.decrease_plotting_speed(self.graph)
+            self.new_graph.slow_down()
         elif action == zoom_in:
-            self.graphController.zoom_in(self.graph)
+            # self.graphController.zoom_in(self.graph)
+            self.new_graph.zoom_in()
         elif action == zoom_out:
-            self.graphController.zoom_out(self.graph)
+            # self.graphController.zoom_out(self.graph)
+            self.new_graph.zoom_out()
         elif action == remove:
             self.deleteLater()
 
@@ -151,7 +159,8 @@ class GraphWidget(QWidget):
 
     def toggle_pause_play(self):
         try:
-            self.graphController.toggle_play_pause_btn(self.graph)
+            self.new_graph.toggle_play_pause()
+            # self.graphController.toggle_play_pause_btn(self.graph)
         except AttributeError:
             pass
         self.playing_state = not self.playing_state
@@ -171,3 +180,4 @@ class GraphWidget(QWidget):
         self.graphController.add_signal_to_graph(signal, self.graph)
         self.enable_controls()
         self.toggle_pause_play()
+        self.new_graph.add_signal(signal)
