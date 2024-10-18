@@ -47,22 +47,30 @@ class Graph(QWidget):
         self.maxXFromSignals = 0
         self.maxXPerCurrPlottingIndex =0
         self.allSignalsPlotted = False
+        self.minYSignal:Signal = None
+        self.maxYSignal: Signal = None
+        self.maxXSignal: Signal= None
 
         #Plot Widget Setup
         self.plotItem = self.plotArea.plotItem
         self.viewBox= self.plotArea.plotItem.getViewBox()
+        
         self.plotItem.setTitle(title=label)
-        self.plotItem.showGrid(x=True, y=True)
         self.plotItem.setLabel(axis='left', text="Y-Axis")
         self.plotItem.setLabel(axis='bottom', text="X-Axis")
+            
+        self.viewBox.setXRange(min=0,max=self.maxXFromSignals)
+        self.viewBox.enableAutoRange(axis=self.viewBox.XAxis, enable=True)
+        self.viewBox.enableAutoRange(axis=self.viewBox.YAxis, enable=False)
+        
+        #self.viewBox.setLimits(xMin=0,xMax=self.maxXPerCurrPlottingIndex, yMin=self.minYFromSignals, yMax=self.MaxYFromSignals)
         self.viewBox.setAutoPan(x=True, y=True)
         self.viewBox.setMouseEnabled(x=True, y=True)
-        self.viewBox.enableAutoRange()
-        self.viewBox.setDefaultPadding(0.2)
-        self.viewBox.setRange(yRange=[self.minYFromSignals, self.MaxYFromSignals], disableAutoRange=False)
+        
         self.ROI = pg.RectROI(pos=[0,0], size=[0,0])
         self.ROI.setPen(width=4.5, color="#16adee")
         self.plotItem.addItem(self.ROI)
+        self.ROI.hide()
         self.ROI.sigRegionChanged.connect(self.selectSignalPoints)
         
         # Controllers Setup
@@ -81,6 +89,7 @@ class Graph(QWidget):
         self.layout().addWidget(self.controllers)
         
         self.mountBtnsActions()
+        self.plotItem.showGrid(x=True, y=True)
         
         
     def addSignal(self, signal:Signal):
@@ -89,12 +98,26 @@ class Graph(QWidget):
         signal_item.opts["name"] = str(signal.ID)
         self.plotArea.plotItem.addItem(signal_item)
         
-        self.minYFromSignals = min(min(signal.Y), self.minYFromSignals)
-        self.MaxYFromSignals = max(max(signal.Y), self.MaxYFromSignals)
-        self.maxXFromSignals = max(max(signal.X), self.maxXFromSignals)
+        minY = min(signal.Y)
+        maxY = max(signal.Y)
+        maxX = max(signal.X)
+        
+        if minY < self.minYFromSignals:
+            self.minYFromSignals = minY
+            self.minYSignal = signal
+            
+        if maxY > self.MaxYFromSignals:
+            self.MinYFromSignals = maxY
+            self.maxYSignal = signal
+            
+        if maxX > self.maxXFromSignals:
+            self.maxXFromSignals = maxX
+            self.maxXSignal = signal                
 
            
     def getSignal(self, signalID:str):
+        """return the signal index in the graph and signal object"""
+        
         for index, signal in enumerate(self.signals):
             if signalID == str(signal.ID):
                     return index, signal
@@ -114,6 +137,22 @@ class Graph(QWidget):
             if isinstance(signal_item, pg.PlotDataItem):
                 signal_item.clear()
     
+    
+    def showSignal(self, signalID:str, hideOtherSignals = False):
+        for signalItem in self.plotArea.plotItem.dataItems:
+            if isinstance(signalItem, pg.PlotDataItem):
+                if signalItem.name() == signalID: signalItem.show()
+                else: 
+                    if hideOtherSignals: signalItem.hide()
+                
+    
+    def hideSignal(self, signalID:str, showOtherSignals=False):
+        for signalItem in self.plotArea.plotItem.dataItems:
+            if isinstance(signalItem, pg.PlotDataItem):
+                if signalItem.name() == signalID: signalItem.hide()
+                else:
+                    if showOtherSignals: signalItem.show()    
+                                               
     
     def togglePlayPauseBtn(self):
         """Cotrols playing and pausing\n
@@ -136,26 +175,31 @@ class Graph(QWidget):
                 self.allSignalsPlotted = False
                 self.plottingIndex = 0
                 self.plottingStarted = True
+                self.viewBox.setXRange(min=0, max=1)
                 self.plotSignals()
                 
-    
+                
     def plotSignals(self):
-        self.viewBox.setLimits(xMin=0, xMax=self.maxXFromSignals, yMin=self.minYFromSignals, yMax=self.MaxYFromSignals)
+        self.viewBox.setLimits(xMin=0, xMax=self.maxXPerCurrPlottingIndex, yMin=self.minYFromSignals, yMax=self.MaxYFromSignals)
+        self.viewBox.setYRange(self.minYFromSignals, self.MaxYFromSignals)
         
         allPlotted = True
+        
         for index, signal_item in enumerate(self.plotArea.plotItem.dataItems):
             if isinstance(signal_item, pg.PlotDataItem):  
                 if self.plottingIndex < len(self.signals[index].X):
                     signal_item.setData(self.signals[index].X[:self.plottingIndex], self.signals[index].Y[:self.plottingIndex])
                     self.maxXPerCurrPlottingIndex = max(self.signals[index].X[self.plottingIndex], self.maxXPerCurrPlottingIndex)
+                    self.viewBox.setLimits(xMax=self.maxXPerCurrPlottingIndex)
                     allPlotted = False
+        
         self.plottingIndex += 1
         if allPlotted:
             self.timer.stop()
             self.plottingStarted = True
             self.playPauseBtn.hide()
-            
-            
+                  
+    
     def replay(self):
         """clear plotted signals to start plotting again automatically\n
         for clearing graph and replaying upon user pressing play again:\n
@@ -196,15 +240,15 @@ class Graph(QWidget):
         maxXRange=self.maxXPerCurrPlottingIndex)    
     
     
-    def selectSignalPoints(self):
-        selected_signal_item = self.plotArea.plotItem.dataItems[0]
-        if isinstance(selected_signal_item, pg.PlotDataItem):
-            xPnts = list(selected_signal_item.xData)
-            yPnts = list(selected_signal_item.yData)
-            
-        pnts: List[Tuple] = []
-        for i, x in enumerate(xPnts):
-            pnts[i] = x,yPnts[i]
+    def selectSignalPoints(self, signalID:str):
+        """returns two lists for the selected points"""
+        
+        index, selectedSignalItem = self.getSignal()
+        self.showSignal(signalID=signalID, hideOtherSignals=True)
+        
+        if isinstance(selectedSignalItem, pg.PlotDataItem):
+            X = list(selectedSignalItem.xData)
+            Y = list(selectedSignalItem.yData)
         
         ROIBounds = self.ROI.boundingRect()
         xLeft = ROIBounds.left()
@@ -212,14 +256,17 @@ class Graph(QWidget):
         yBottom = ROIBounds.bottom()
         yTop = ROIBounds.top()
         
-        selectedPnts: list[QPointF] = []
+        selectedX, selectedY = [], []
         
-        for pnt in pnts:
-            x, y = pnt.x(), pnt.y()
+        for i, x in enumerate(x):
+            y = Y[i]
             if (x<=xLeft and x>=xRight) and (y<=yTop and y>=yBottom):       
-                selectedPnts.append(pnt)    
+                selectedX.append(x)
+                selectedY.append(y)
                 
+        return selectedX, selectedY            
                 
+    
     def mountBtnsActions(self):        
         self.playPauseBtn.clicked.connect(self.togglePlayPauseBtn)
         self.replayBtn.clicked.connect(self.replay)
