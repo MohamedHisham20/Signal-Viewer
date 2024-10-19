@@ -253,3 +253,10 @@ class NonRectGraph(QFrame):
     def signal_to_nonRect(self, signal):
         y_values = signal.get_y_values()
         self.radar_widget.load_y_axis(y_values, signal.label)
+    def clear(self):
+        self.radar_widget.start_over()
+        self.radar_widget.remaining_points = []
+        self.radar_widget.hit_points = []
+        self.radar_widget.prev_hit_point = None
+        self.radar_widget.data = np.array([])
+        self.radar_widget.update()
