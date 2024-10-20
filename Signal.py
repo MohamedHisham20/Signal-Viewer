@@ -13,6 +13,8 @@ class Signal:
         self.label = label
         self.data_qpnts = []
         self.data_pnts = []
+        self.shift = 0
+        self.last_point = 0
         if color is None:
             self.color = "#{:06x}".format(np.random.randint(0, 0xFFFFFF))
         else:

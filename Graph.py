@@ -20,6 +20,7 @@ class CustomViewBox(pg.ViewBox):
         self.roi_end_pos = None
         self.selectfirstX = None
         self.selectseoncdX = None
+        self.crop = lambda: print("No crop function set")
 
     def mousePressEvent(self, event):
         if event.modifiers() == Qt.ControlModifier and event.button() == Qt.LeftButton:
@@ -56,6 +57,7 @@ class CustomViewBox(pg.ViewBox):
         super().wheelEvent(event)
 
     def keyPressEvent(self, event):
+        
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
             if self.roi is not None:
                 pos = self.roi.pos() 
@@ -66,6 +68,7 @@ class CustomViewBox(pg.ViewBox):
                 self.selectseoncdX = bottom_right
                 self.removeItem(self.roi)
                 self.roi = None
+                self.crop()
                 # print(f"Selected X range: {bottom_left} to {bottom_right}")
 
 
@@ -113,7 +116,7 @@ class Graph(QWidget):
         self.plot_widget.setYRange(-1, 1, padding=0)
         self.timer = QTimer()
 
-
+    
     def change_speed(self,speed:int):
         self.timer.start(speed)
     
@@ -125,7 +128,7 @@ class Graph(QWidget):
             plot.isRunning = play
 
     def delete_signal(self,signal:Signal):
-        # print("Signal not found")
+        print("Signal not found")
         for plot in self.plots:
             if plot.signal.label == signal.label:
                 self.plot_widget.removeItem(plot.plot)
@@ -147,24 +150,31 @@ class Graph(QWidget):
             cropped_signal = Signal(
                 label=f"Cropped_{plot.signal.label} {self.croped_count}",
                 data_pnts=cropped_data,
-                color=plot.signal.color
+                color=
+            '#' + ''.join(np.random.choice(list('0123456789ABCDEF'), 6))
             )
             self.custom_viewbox.selectfirstX = None
             self.custom_viewbox.selectseoncdX = None
             return cropped_signal
         return None
-    def plot_signal(self, signal: Signal):
+    def plot_signal(self, signal: Signal,last_point:float = 0 , shift : int= 0) -> Plot:
         # if signal already plotted
+        last_point = int(len(signal.data_pnts) * last_point) + shift
+        print(last_point)
+        # add the shift to the x values
+        signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
         for plot in self.plots:
             if plot.signal.label == signal.label:
                 return plot
         x_values = [point[0] for point in signal.data_pnts]
         y_values = [point[1] for point in signal.data_pnts]
-        curve = pg.PlotDataItem(x_values[:self.last_point], y_values[:self.last_point], pen=pg.mkPen(signal.color, width=2))
+        curve = pg.PlotDataItem(x_values[:last_point], y_values[:last_point], pen=pg.mkPen(signal.color, width=2))
         label = pg.TextItem(text=signal.label, color=signal.color, anchor=(1, 1))
         self.plot_widget.addItem(label)
         plot = Plot(curve, signal, label)
         self.plots.append(plot)
+        plot.last_point = last_point
+        plot.signal.shift = shift
         self.plot_widget.addItem(plot.plot)
         if len(self.plots) == 1:
             self.plot_to_track = plot
@@ -232,6 +242,7 @@ class Graph(QWidget):
                 plot.isRunning = False
             if plot.isRunning:
                 plot.last_point += 1
+                plot.signal.last_point = plot.last_point
             plot.plot.setData([point[0] for point in plot.signal.data_pnts[:plot.last_point]], 
                               [point[1] for point in plot.signal.data_pnts[:plot.last_point]])
             # Update label position
@@ -262,7 +273,10 @@ class Graph(QWidget):
         if not self.custom_viewbox.is_user_panning and longest.isRunning:
             self.plot_widget.setXRange(longest.last_point - self.shift_slide * longest.last_point, self.panWidth + longest.last_point - self.shift_slide * longest.last_point, padding=0)
             self.plot_widget.setYRange(min_y, max_y, padding=0)
-    
+    def get_last_point(self):
+        if self.plot_to_track:
+            return self.plot_to_track.last_point
+        return 0
     
 class test(QMainWindow):
     def __init__(self):

@@ -1,9 +1,29 @@
-from MainWindow import Ui_MainWindow
+from MainWindow import DragDropList, Ui_MainWindow
 from NonRectGraphController import NonRectGraph
 from PySide6 import QtWidgets
 from Signal import Signal
 from Graph import Graph
 
+def add_lists(ui, graph_C1, graph_C2, graph_C3,signals):
+  horizontalLayout = QtWidgets.QHBoxLayout()
+  ui.horizontalLayout.setObjectName("horizontalLayout")
+  ui.C1_list = DragDropList()
+  ui.C1_list.setupParameters(ui, graph_C1, graph_C2, graph_C3,signals)
+  ui.C1_list.setObjectName("C1_list")
+  ui.horizontalLayout.addWidget(ui.C1_list)
+  ui.C2_list = DragDropList()
+  ui.C2_list.setupParameters(ui, graph_C1, graph_C2, graph_C3,signals)
+  ui.C2_list.setObjectName("C2_list")
+  ui.horizontalLayout.addWidget(ui.C2_list)
+  ui.C3_list = DragDropList()
+  ui.C3_list.setupParameters(ui, graph_C1, graph_C2, graph_C3,signals)
+  ui.C3_list.setObjectName("C3_list")
+  ui.horizontalLayout.addWidget(ui.C3_list)
+  ui.verticalLayout_13.addLayout(ui.horizontalLayout)
+  ui.verticalLayout_4.addLayout(ui.verticalLayout_13)
+  ui.C1_widget.layout().addWidget(graph_C1.plot_widget)
+  ui.C2_widget.layout().addWidget(graph_C2.plot_widget)
+  ui.C3_widget.layout().addWidget(graph_C3.plot_widget)
 
 def NonRect_connections(graph: NonRectGraph , ui: Ui_MainWindow, signals: list[Signal]):
     ui.Channels.setFixedHeight(400)
@@ -34,9 +54,11 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
 
         def add_signal():
             signal = signals[ui.addsignalc1_combo.currentIndex()]
-            # Check if the signal already exists in the combo box
+            # check what is the last point of any ploted signal
+
+            last_point = graph.get_last_point()
             if signal.label not in [ui.choosesignalc1_combo.itemText(i) for i in range(ui.choosesignalc1_combo.count())]:
-              plot = graph.plot_signal(signal)
+              plot = graph.plot_signal(signal,shift=last_point)
               
               if plot.signal.label not in [ui.choosesignalc1_combo.itemText(i) for i in range(ui.choosesignalc1_combo.count())]:
                 ui.choosesignalc1_combo.addItem(plot.signal.label)
@@ -81,8 +103,10 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
             
             label = ui.choosesignalc1_combo.currentText()
             plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            graph.change_pan_window(plot, ui.dial_slide_c1.value() / 100)
+            if plot is not None:
+              graph.change_pan_window(plot, ui.dial_slide_c1.value() / 100)
         ui.choosesignalc1_combo.currentIndexChanged.connect(change_pan)
+        ui.dial_slide_btn.setValue(0)
         ui.dial_slide_c1.valueChanged.connect(change_pan)
 
     elif channel == 2:
@@ -94,8 +118,9 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
         def add_signal():
             signal = signals[ui.addsignalc2_combo.currentIndex()]
             # Check if the signal already exists in the combo box
+            last_point = graph.get_last_point()
             if signal.label not in [ui.choosesignalc2_combo.itemText(i) for i in range(ui.choosesignalc2_combo.count())]:
-              plot = graph.plot_signal(signal)
+              plot = graph.plot_signal(signal,shift=last_point)
               if plot.signal.label not in [ui.choosesignalc2_combo.itemText(i) for i in range(ui.choosesignalc2_combo.count())]:
                 ui.choosesignalc2_combo.addItem(plot.signal.label)
               ui.C2_list.addItem(plot.signal.label)
@@ -138,8 +163,10 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
             
             label = ui.choosesignalc2_combo.currentText()
             plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            graph.change_pan_window(plot, ui.dial_slide_c2.value() / 100)
+            if plot is not None:
+              graph.change_pan_window(plot, ui.dial_slide_c2.value() / 100)
         ui.choosesignalc2_combo.currentIndexChanged.connect(change_pan)
+        ui.dial_slide_c2.setValue(0)
         ui.dial_slide_c2.valueChanged.connect(change_pan)
 
     elif channel == 3:
@@ -151,8 +178,10 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
         def add_signal():
             signal = signals[ui.addsignalc3_combo.currentIndex()]
             # Check if the signal already exists in the combo box
+            last_point = graph.get_last_point()
             if signal.label not in [ui.choosesignalc3_combo.itemText(i) for i in range(ui.choosesignalc3_combo.count())]:
-              plot = graph.plot_signal(signal)
+
+              plot = graph.plot_signal(signal,shift=last_point)
               if plot.signal.label not in [ui.choosesignalc3_combo.itemText(i) for i in range(ui.choosesignalc3_combo.count())]:
                 ui.choosesignalc3_combo.addItem(plot.signal.label)
               ui.C3_list.addItem(plot.signal.label)
@@ -195,8 +224,10 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
             
             label = ui.choosesignalc3_combo.currentText()
             plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            graph.change_pan_window(plot, ui.dial_slide_c3.value() / 100)
+            if plot is not None:
+              graph.change_pan_window(plot, ui.dial_slide_c3.value() / 100)
         ui.choosesignalc3_combo.currentIndexChanged.connect(change_pan)
+        ui.dial_slide_c3.setValue(0)
         ui.dial_slide_c3.valueChanged.connect(change_pan)
 
 def all_channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
@@ -217,32 +248,37 @@ def all_channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
         graph2.change_speed(speed)
         graph3.change_speed(speed)
     def change_pan_all(value):
-        graph1.change_pan_window(graph1.plot_to_track, value)
-        graph2.change_pan_window(graph2.plot_to_track, value)
-        graph3.change_pan_window(graph3.plot_to_track, value)
+        if graph1.plot_to_track is not None:
+           graph1.change_pan_window(graph1.plot_to_track, value/100)
+        if graph2.plot_to_track is not None:
+          graph2.change_pan_window(graph2.plot_to_track, value/100)
+        if graph3.plot_to_track is not None:
+          graph3.change_pan_window(graph3.plot_to_track, value/100)
     ui.play_all_btn.clicked.connect(play_all)
     ui.stop_all_btn.clicked.connect(stop_all)
     ui.replay_all_btn.clicked.connect(rewind_all)
     ui.dial_speed_btn.setRange(10, 100)
     ui.dial_speed_btn.setValue(50)
-    ui.dial_speed_btn.valueChanged.connect(lambda: change_speed_all(150 - ui.dial_speed_btn.value()))
+    ui.dial_speed_btn.valueChanged.connect(lambda: change_speed_all(140 - ui.dial_speed_btn.value()))
     ui.dial_slide_btn.setRange(0, 100)
+    ui.dial_slide_btn.setValue(0)
     ui.dial_slide_btn.valueChanged.connect(change_pan_all)
 
 def general_connections(ui: Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph,signals: list[Signal]):
   def crop_signal():
-    print("Cropping")
-    selected_channel = ui.crop_combo.currentIndex()+1
+    # print("Cropping")
+    # selected_channel = ui.crop_combo.currentIndex()+1
     from_c1 = graph1.crop_signal()
     from_c2 = graph2.crop_signal()
     from_c3 = graph3.crop_signal()
-    print(from_c1)
-    print(from_c2)
-    print(from_c3)
+    # print(from_c1)
+    # print(from_c2)
+    # print(from_c3)
     def add_signal(graph:Graph,combo:QtWidgets.QComboBox, signal,list):
       signals.append(signal)
       if signal.label not in [combo.itemText(i) for i in range(combo.count())]:
-        plot = graph.plot_signal(signal)
+        shift = graph.get_last_point()
+        plot = graph.plot_signal(signal,shift=shift)
         
         if plot.signal.label not in [combo.itemText(i) for i in range(combo.count())]:
           combo.addItem(plot.signal.label)
@@ -250,36 +286,27 @@ def general_connections(ui: Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph
         update_signal_list(ui,signals)
       else:
         print("Signal already exists in the combo box")
+      
     if from_c1 is not None:
-      if selected_channel == 1:
-        add_signal(graph1, ui.choosesignalc1_combo, from_c1, ui.C1_list)
-      elif selected_channel == 2:
-        add_signal(graph2, ui.choosesignalc2_combo, from_c1, ui.C2_list)
-      elif selected_channel == 3:
-        add_signal(graph3, ui.choosesignalc3_combo, from_c1, ui.C3_list)
+      add_signal(graph1,ui.addsignalc1_combo,from_c1,ui.C1_list)
     if from_c2 is not None:
-      if selected_channel == 1:
-        add_signal(graph1, ui.choosesignalc1_combo, from_c2, ui.C1_list)
-      elif selected_channel == 2:
-        add_signal(graph2, ui.choosesignalc2_combo, from_c2, ui.C2_list)
-      elif selected_channel == 3:
-        add_signal(graph3, ui.choosesignalc3_combo, from_c2, ui.C3_list)
+      add_signal(graph2,ui.addsignalc2_combo,from_c2,ui.C2_list)
     if from_c3 is not None:
-      if selected_channel == 1:
-        add_signal(graph1, ui.choosesignalc1_combo, from_c3, ui.C1_list)
-      elif selected_channel == 2:
-        add_signal(graph2, ui.choosesignalc2_combo, from_c3, ui.C2_list)
-      elif selected_channel == 3:
-        add_signal(graph3, ui.choosesignalc3_combo, from_c3, ui.C3_list)
-    
-  ui.crop_btn.clicked.connect(crop_signal) 
+      add_signal(graph3,ui.addsignalc3_combo,from_c3,ui.C3_list)
+
+  graph1.custom_viewbox.crop =crop_signal
+  graph2.custom_viewbox.crop =crop_signal
+  graph3.custom_viewbox.crop =crop_signal
+
+  # ui.crop_btn.clicked.connect(crop_signal) 
   
 def update_signal_list(ui : Ui_MainWindow,signals:list[Signal]):
    
   ui.addsignalc1_combo.clear()
   ui.addsignalc2_combo.clear()
   ui.addsignalc3_combo.clear()
-    
+  ui.addsignalc4_combo.clear()
+
   ui.addsignalc1_combo.addItems([signal.label for signal in signals])
   ui.addsignalc2_combo.addItems([signal.label for signal in signals])
   ui.addsignalc3_combo.addItems([signal.label for signal in signals])

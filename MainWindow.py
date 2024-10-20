@@ -10,11 +10,11 @@
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt, QMimeData
-from PySide6.QtWidgets import QListWidget, QHBoxLayout, QWidget, QPushButton
+from PySide6.QtWidgets import QListWidget, QHBoxLayout, QWidget, QPushButton ,QMainWindow
 from Graph import Graph
 from styleSheet import styleSheet
 
-class Ui_MainWindow(object):
+class Ui_MainWindow(QMainWindow):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1514, 899)
@@ -355,33 +355,33 @@ class Ui_MainWindow(object):
         self.General_tap.setObjectName("General_tap")
         self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.General_tap)
         self.verticalLayout_14.setObjectName("verticalLayout_14")
-        self.crop_label = QtWidgets.QLabel(self.General_tap)
-        self.crop_label.setMinimumSize(QtCore.QSize(0, 10))
-        self.crop_label.setObjectName("crop_label")
-        self.verticalLayout_14.addWidget(self.crop_label)
-        self.horizontalLayout_33 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_33.setObjectName("horizontalLayout_33")
-        self.crop_Choose_label = QtWidgets.QLabel(self.General_tap)
-        self.crop_Choose_label.setObjectName("crop_Choose_label")
-        self.horizontalLayout_33.addWidget(self.crop_Choose_label)
-        self.crop_combo = QtWidgets.QComboBox(self.General_tap)
-        self.crop_combo.addItem("")
-        self.crop_combo.addItem("")
-        self.crop_combo.addItem("")
-        self.crop_combo.setEnabled(True)
-        self.crop_combo.setDuplicatesEnabled(False)
-        self.crop_combo.setObjectName("crop_combo")
-        self.horizontalLayout_33.addWidget(self.crop_combo)
-        self.verticalLayout_14.addLayout(self.horizontalLayout_33)
-        self.crop_btn = QtWidgets.QPushButton(self.General_tap)
-        self.crop_btn.setObjectName("crop_btn")
-        self.verticalLayout_14.addWidget(self.crop_btn)
-        self.line_2 = QtWidgets.QFrame(self.General_tap)
-        self.line_2.setMinimumSize(QtCore.QSize(0, 20))
-        self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line_2.setObjectName("line_2")
-        self.verticalLayout_14.addWidget(self.line_2)
+        # self.crop_label = QtWidgets.QLabel(self.General_tap)
+        # self.crop_label.setMinimumSize(QtCore.QSize(0, 10))
+        # self.crop_label.setObjectName("crop_label")
+        # self.verticalLayout_14.addWidget(self.crop_label)
+        # self.horizontalLayout_33 = QtWidgets.QHBoxLayout()
+        # self.horizontalLayout_33.setObjectName("horizontalLayout_33")
+        # self.crop_Choose_label = QtWidgets.QLabel(self.General_tap)
+        # self.crop_Choose_label.setObjectName("crop_Choose_label")
+        # self.horizontalLayout_33.addWidget(self.crop_Choose_label)
+        # self.crop_combo = QtWidgets.QComboBox(self.General_tap)
+        # self.crop_combo.addItem("")
+        # self.crop_combo.addItem("")
+        # self.crop_combo.addItem("")
+        # self.crop_combo.setEnabled(True)
+        # self.crop_combo.setDuplicatesEnabled(False)
+        # self.crop_combo.setObjectName("crop_combo")
+        # self.horizontalLayout_33.addWidget(self.crop_combo)
+        # self.verticalLayout_14.addLayout(self.horizontalLayout_33)
+        # self.crop_btn = QtWidgets.QPushButton(self.General_tap)
+        # self.crop_btn.setObjectName("crop_btn")
+        # self.verticalLayout_14.addWidget(self.crop_btn)
+        # self.line_2 = QtWidgets.QFrame(self.General_tap)
+        # self.line_2.setMinimumSize(QtCore.QSize(0, 20))
+        # self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
+        # self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
+        # self.line_2.setObjectName("line_2")
+        # self.verticalLayout_14.addWidget(self.line_2)
         self.glue_label = QtWidgets.QLabel(self.General_tap)
         self.glue_label.setMinimumSize(QtCore.QSize(0, 10))
         self.glue_label.setObjectName("glue_label")
@@ -540,12 +540,12 @@ class Ui_MainWindow(object):
         # item.setText(_translate("MainWindow", "signal1"))
         # self.C1_list.setSortingEnabled(__sortingEnabled)
         self.Channels.setTabText(self.Channels.indexOf(self.all_channels), _translate("MainWindow", "All"))
-        self.crop_label.setText(_translate("MainWindow", "Crop"))
-        self.crop_Choose_label.setText(_translate("MainWindow", "Channel"))
-        self.crop_combo.setItemText(0, _translate("MainWindow", "C1"))
-        self.crop_combo.setItemText(1, _translate("MainWindow", "C2"))
-        self.crop_combo.setItemText(2, _translate("MainWindow", "C3"))
-        self.crop_btn.setText(_translate("MainWindow", "add"))
+        # self.crop_label.setText(_translate("MainWindow", "Crop"))
+        # self.crop_Choose_label.setText(_translate("MainWindow", "Channel"))
+        # self.crop_combo.setItemText(0, _translate("MainWindow", "C1"))
+        # self.crop_combo.setItemText(1, _translate("MainWindow", "C2"))
+        # self.crop_combo.setItemText(2, _translate("MainWindow", "C3"))
+        # self.crop_btn.setText(_translate("MainWindow", "add"))
         self.glue_label.setText(_translate("MainWindow", "Glue"))
         self.glue_signal1_label.setText(_translate("MainWindow", "Signal 1"))
         self.glue_signal2_label.setText(_translate("MainWindow", "Signal 2"))
@@ -571,12 +571,15 @@ class DragDropList(QListWidget):
         self.graph2 = None
         self.graph3 = None
         self.ui = None
+        self.AllSignals = None
 
-    def setupParameters(self, ui, graph1, graph2, graph3):
+
+    def setupParameters(self, ui, graph1, graph2, graph3,AllSignals):
         self.ui = ui
         self.graph1 = graph1
         self.graph2 = graph2
         self.graph3 = graph3
+        self.AllSignals = AllSignals
     
     def addItems(self, items):
         for item in items:
@@ -603,9 +606,9 @@ class DragDropList(QListWidget):
                     source.takeItem(source.row(matching_items[0]))
         else:
             event.ignore()
-        self.salah(self.ui,self.graph1,self.graph2,self.graph3)
+        self.swap_signals(self.ui,self.graph1,self.graph2,self.graph3,self.AllSignals)
 
-    def salah(self,ui:Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph):
+    def swap_signals(self,ui:Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph,AllSignals):
         items1 = ui.C1_list.get_items()
         items2 = ui.C2_list.get_items()
         items3 = ui.C3_list.get_items()
@@ -618,16 +621,31 @@ class DragDropList(QListWidget):
         ui.C3_list.addItems(list(set(items3)))
 
         # get signals corresponding to the items
-        signals1 = [signal for signal in graph1.AllSignals if signal.label in items1]
-        signals2 = [signal for signal in graph2.AllSignals if signal.label in items2]
-        signals3 = [signal for signal in graph3.AllSignals if signal.label in items3]
-        # plot signals
-        for signal in signals1:
-            graph1.plot_signal(signal)
-        for signal in signals2:
-            graph2.plot_signal(signal)
-        for signal in signals3:
-            graph3.plot_signal(signal)
+        signals1 = [signal for signal in AllSignals if signal.label in items1]
+        signals2 = [signal for signal in AllSignals if signal.label in items2]
+        signals3 = [signal for signal in AllSignals if signal.label in items3]
+        # get plots for each graph corresponding to the signals
+        allplots1 = graph1.plots + graph2.plots + graph3.plots
+
+        ptolts1 = [plot for plot in allplots1 if plot.signal.label in items1]
+        ptolts2 = [plot for plot in allplots1 if plot.signal.label in items2]
+        ptolts3 = [plot for plot in allplots1 if plot.signal.label in items3]
+        print(ptolts1)
+        print(ptolts2)
+        print(ptolts3)
+        for plot in ptolts1:
+            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
+            graph1.plot_signal(plot.signal,last_point,plot.signal.shift)
+            # graph1.plot_signal(plot.signal,0,plot.signal.shift)
+        for plot in ptolts2:
+            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
+            graph2.plot_signal(plot.signal,last_point,plot.signal.shift)
+            # graph2.plot_signal(plot.signal,0,plot.signal.shift)
+        for plot in ptolts3:
+            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
+            graph3.plot_signal(plot.signal,last_point,plot.signal.shift)
+            # graph3.plot_signal(plot.signal,0,plot.signal.shift)
+
         for plot in graph1.plots:
             if plot.signal.label not in items1:
                 graph1.delete_signal(plot.signal)
@@ -647,6 +665,18 @@ class DragDropList(QListWidget):
         for i in range(ui.choosesignalc3_combo.count()):
             if ui.choosesignalc3_combo.itemText(i) not in items3:
                 ui.choosesignalc3_combo.removeItem(i)
+        # add signals to combobox that not in the list
+        for signal in signals1:
+            if ui.choosesignalc1_combo.findText(signal.label) == -1:
+                ui.choosesignalc1_combo.addItem(signal.label)
+        for signal in signals2:
+            if ui.choosesignalc2_combo.findText(signal.label) == -1:
+                ui.choosesignalc2_combo.addItem(signal.label)
+        for signal in signals3:
+            if ui.choosesignalc3_combo.findText(signal.label) == -1:
+                ui.choosesignalc3_combo.addItem(signal.label)
+
+
 
 
 
@@ -671,6 +701,6 @@ class DragDropList(QListWidget):
         item = self.itemAt(event.pos())
         if item:
             self.takeItem(self.row(item))
-        self.salah(self.ui,self.graph1,self.graph2,self.graph3)
+        self.swap_signals(self.ui,self.graph1,self.graph2,self.graph3,self.AllSignals)
         super().mouseDoubleClickEvent(event)
         
