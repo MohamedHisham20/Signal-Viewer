@@ -382,10 +382,10 @@ class Ui_MainWindow(QMainWindow):
         # self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         # self.line_2.setObjectName("line_2")
         # self.verticalLayout_14.addWidget(self.line_2)
-        self.glue_label = QtWidgets.QLabel(self.General_tap)
-        self.glue_label.setMinimumSize(QtCore.QSize(0, 10))
-        self.glue_label.setObjectName("glue_label")
-        self.verticalLayout_14.addWidget(self.glue_label)
+        # self.glue_label = QtWidgets.QLabel(self.General_tap)
+        # self.glue_label.setMinimumSize(QtCore.QSize(0, 10))
+        # self.glue_label.setObjectName("glue_label")
+        # self.verticalLayout_14.addWidget(self.glue_label)
         self.horizontalLayout_34 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_34.setObjectName("horizontalLayout_34")
         self.glue_signal1_label = QtWidgets.QLabel(self.General_tap)
@@ -546,7 +546,7 @@ class Ui_MainWindow(QMainWindow):
         # self.crop_combo.setItemText(1, _translate("MainWindow", "C2"))
         # self.crop_combo.setItemText(2, _translate("MainWindow", "C3"))
         # self.crop_btn.setText(_translate("MainWindow", "add"))
-        self.glue_label.setText(_translate("MainWindow", "Glue"))
+        # self.glue_label.setText(_translate("MainWindow", "Glue"))
         self.glue_signal1_label.setText(_translate("MainWindow", "Signal 1"))
         self.glue_signal2_label.setText(_translate("MainWindow", "Signal 2"))
         self.glue_btn.setText(_translate("MainWindow", "Glue"))
@@ -608,11 +608,11 @@ class DragDropList(QListWidget):
             event.ignore()
         self.swap_signals(self.ui,self.graph1,self.graph2,self.graph3,self.AllSignals)
 
-    def swap_signals(self,ui:Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph,AllSignals):
+    def swap_signals(self, ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, AllSignals):
         items1 = ui.C1_list.get_items()
         items2 = ui.C2_list.get_items()
         items3 = ui.C3_list.get_items()
-        # remove dublictes from each dragdrop list
+        # remove duplicates from each dragdrop list
         ui.C1_list.clear()
         ui.C2_list.clear()
         ui.C3_list.clear()
@@ -620,31 +620,33 @@ class DragDropList(QListWidget):
         ui.C2_list.addItems(list(set(items2)))
         ui.C3_list.addItems(list(set(items3)))
 
-        # get signals corresponding to the items
-        signals1 = [signal for signal in AllSignals if signal.label in items1]
-        signals2 = [signal for signal in AllSignals if signal.label in items2]
-        signals3 = [signal for signal in AllSignals if signal.label in items3]
         # get plots for each graph corresponding to the signals
         allplots1 = graph1.plots + graph2.plots + graph3.plots
 
-        ptolts1 = [plot for plot in allplots1 if plot.signal.label in items1]
-        ptolts2 = [plot for plot in allplots1 if plot.signal.label in items2]
-        ptolts3 = [plot for plot in allplots1 if plot.signal.label in items3]
-        print(ptolts1)
-        print(ptolts2)
-        print(ptolts3)
-        for plot in ptolts1:
-            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
-            graph1.plot_signal(plot.signal,last_point,plot.signal.shift)
-            # graph1.plot_signal(plot.signal,0,plot.signal.shift)
-        for plot in ptolts2:
-            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
-            graph2.plot_signal(plot.signal,last_point,plot.signal.shift)
-            # graph2.plot_signal(plot.signal,0,plot.signal.shift)
-        for plot in ptolts3:
-            last_point = (plot.last_point - plot.signal.shift)/len(plot.signal.data_pnts)
-            graph3.plot_signal(plot.signal,last_point,plot.signal.shift)
-            # graph3.plot_signal(plot.signal,0,plot.signal.shift)
+        plots1 = [plot for plot in allplots1 if plot.signal.label in items1]
+        plots2 = [plot for plot in allplots1 if plot.signal.label in items2]
+        plots3 = [plot for plot in allplots1 if plot.signal.label in items3]
+        # print(plots1)
+        # print(plots2)
+        # print(plots3)
+        for plot in plots1:
+            last_point = int((plot.last_point ) / len(plot.signal.data_pnts))
+            if plot.isRealTime:
+                graph1.plot_real_time(label="Real Time")
+            else:
+                graph1.plot_signal(plot.signal)
+        for plot in plots2:
+            last_point = int((plot.last_point ) / len(plot.signal.data_pnts))
+            if plot.isRealTime:
+                graph2.plot_real_time(label="Real Time")
+            else:
+                graph2.plot_signal(plot.signal)
+        for plot in plots3:
+            last_point = int((plot.last_point ) / len(plot.signal.data_pnts))
+            if plot.isRealTime:
+                graph3.plot_real_time(label="Real Time")
+            else:
+                graph3.plot_signal(plot.signal)
 
         for plot in graph1.plots:
             if plot.signal.label not in items1:
@@ -666,15 +668,15 @@ class DragDropList(QListWidget):
             if ui.choosesignalc3_combo.itemText(i) not in items3:
                 ui.choosesignalc3_combo.removeItem(i)
         # add signals to combobox that not in the list
-        for signal in signals1:
-            if ui.choosesignalc1_combo.findText(signal.label) == -1:
-                ui.choosesignalc1_combo.addItem(signal.label)
-        for signal in signals2:
-            if ui.choosesignalc2_combo.findText(signal.label) == -1:
-                ui.choosesignalc2_combo.addItem(signal.label)
-        for signal in signals3:
-            if ui.choosesignalc3_combo.findText(signal.label) == -1:
-                ui.choosesignalc3_combo.addItem(signal.label)
+        for plot in plots1:
+            if ui.choosesignalc1_combo.findText(plot.signal.label) == -1:
+                ui.choosesignalc1_combo.addItem(plot.signal.label)
+        for plot in plots2:
+            if ui.choosesignalc2_combo.findText(plot.signal.label) == -1:
+                ui.choosesignalc2_combo.addItem(plot.signal.label)
+        for plot in plots3:
+            if ui.choosesignalc3_combo.findText(plot.signal.label) == -1:
+                ui.choosesignalc3_combo.addItem(plot.signal.label)
 
 
 

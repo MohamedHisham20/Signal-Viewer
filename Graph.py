@@ -57,7 +57,6 @@ class CustomViewBox(pg.ViewBox):
         super().wheelEvent(event)
 
     def keyPressEvent(self, event):
-        
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
             if self.roi is not None:
                 pos = self.roi.pos() 
@@ -69,6 +68,7 @@ class CustomViewBox(pg.ViewBox):
                 self.removeItem(self.roi)
                 self.roi = None
                 self.crop()
+                print(f"Selected X range: {bottom_left} to {bottom_right}")
                 # print(f"Selected X range: {bottom_left} to {bottom_right}")
 
 
@@ -92,6 +92,7 @@ class Plot:
         self.signal = signal
         self.label = label
         self.isRunning = True
+        self.isRealTime = False
         self.last_point = int(len(signal.data_pnts) * 0.1)
 
 class Graph(QWidget):
@@ -116,7 +117,7 @@ class Graph(QWidget):
         self.plot_widget.setYRange(-1, 1, padding=0)
         self.timer = QTimer()
 
-    
+
     def change_speed(self,speed:int):
         self.timer.start(speed)
     
@@ -139,6 +140,8 @@ class Graph(QWidget):
                 break
     def crop_signal(self):
         if self.custom_viewbox.selectfirstX is None or self.custom_viewbox.selectseoncdX is None:
+            return
+        if self.plot_to_track is None:
             return
         plot = self.plot_to_track
         cropped_data = [
@@ -238,6 +241,54 @@ class Graph(QWidget):
         
     def update(self):
         for plot in self.plots:
+            if plot.last_point >= len(plot.signal.data_pnts) - 1 and not plot.isRealTime:
+                plot.isRunning = False
+            if plot.isRunning:
+                plot.last_point += 1
+                plot.signal.last_point = plot.last_point
+                if plot.isRealTime:
+                    last_x = plot.signal.data_pnts[-1][0]
+                    last_y = plot.signal.data_pnts[-1][1]
+                    plot.signal.data_pnts.append((last_x + 1, last_y))
+            plot.plot.setData([point[0] for point in plot.signal.data_pnts[:plot.last_point]], 
+                              [point[1] for point in plot.signal.data_pnts[:plot.last_point]])
+            index = plot.last_point - 1
+            if index >= len(plot.signal.data_pnts) or index < 0:
+                index = len(plot.signal.data_pnts) - 1
+            print(plot.last_point ,"len",len(plot.signal.data_pnts))
+
+            plot.label.setPos(plot.signal.data_pnts[index][0], plot.signal.data_pnts[index][1])
+
+        min_x, max_x, min_y, max_y = self.Calculate_min_max()
+        margin_x = (max_x - min_x) * 0.01
+        margin_y = (max_y - min_y) * 0.1
+        # min_x -= margin_x
+        max_x += margin_x
+        min_y -= margin_y
+        max_y += margin_y
+        self.custom_viewbox.signal_max_x = max_x
+        self.custom_viewbox.signal_min_x = min_x
+        self.custom_viewbox.signal_max_y = max_y
+        self.custom_viewbox.signal_min_y = min_y
+        self.custom_viewbox.set_dynamic_limits(
+            min_x,
+            max_x,
+            min_y,
+            max_y
+        )
+
+        longest = self.plot_to_track
+        print("label",longest.signal.label)
+        print("last point",longest.last_point,"len",len(longest.signal.data_pnts))
+        if self.custom_viewbox.elapsed_timer.elapsed() > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
+            self.custom_viewbox.is_user_panning = False
+
+        if not self.custom_viewbox.is_user_panning and longest.isRunning:
+            self.plot_widget.setXRange(longest.last_point - self.shift_slide * longest.last_point + longest.signal.shift, self.panWidth + longest.last_point - self.shift_slide * longest.last_point + longest.signal.shift, padding=0)
+            self.plot_widget.setYRange(min_y, max_y, padding=0)
+
+    def update_old(self):
+        for plot in self.plots:
             if plot.last_point >= len(plot.signal.data_pnts) - 1:
                 plot.isRunning = False
             if plot.isRunning:
@@ -277,20 +328,39 @@ class Graph(QWidget):
         if self.plot_to_track:
             return self.plot_to_track.last_point
         return 0
+
+
+    def plot_real_time(self,shift:int = 0.0 ,label:str = "RealTimeSignal") -> Plot:
+        signal = Signal(label=label, data_pnts=[(0, 0), (1, 1)], color='#FF0000')
+        last_point = int(1+shift)
+        # add the shift to the x values
+        signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
+        for plot in self.plots:
+            if plot.signal.label == signal.label:
+                return plot
+        x_values = [point[0] for point in signal.data_pnts]
+        y_values = [point[1] for point in signal.data_pnts]
+        curve = pg.PlotDataItem(x_values, y_values, pen=pg.mkPen(signal.color, width=2))
+        label = pg.TextItem(text=signal.label, color=signal.color, anchor=(1, 1))
+        self.plot_widget.addItem(label)
+        plot = Plot(curve, signal, label)
+        self.plots.append(plot)
+        plot.last_point = last_point
+        plot.signal.shift = shift
+        plot.isRealTime = True
+        self.plot_widget.addItem(plot.plot)
+        # print("here")
+        if len(self.plots) == 1:
+            self.plot_to_track = plot
+            self.change_pan_window(plot,0.1)
+            self.timer.timeout.connect(self.update)
+            self.timer.start(50)
+        return plot
     
-class test(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.graph_widget = Graph()
-        self.setCentralWidget(self.graph_widget)
-        self.setWindowTitle("Real-Time Plotting with Zoom and Pan Limits")
-        self.show()
 
-# app = QApplication([])
-
-# win = QMainWindow()
-
-# graph = test()
-
-
-# sys.exit(app.exec())
+    def update_real_time(self,value:int):
+        # get all realtime
+        for plot in self.plots:
+            if plot.isRunning and plot.isRealTime:
+                last_x = plot.signal.data_pnts[-1][0]
+                plot.signal.data_pnts.append((last_x+1, value))

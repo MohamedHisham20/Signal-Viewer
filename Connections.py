@@ -278,7 +278,7 @@ def general_connections(ui: Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph
       signals.append(signal)
       if signal.label not in [combo.itemText(i) for i in range(combo.count())]:
         shift = graph.get_last_point()
-        plot = graph.plot_signal(signal,shift=shift)
+        plot = graph.plot_signal(signal)
         
         if plot.signal.label not in [combo.itemText(i) for i in range(combo.count())]:
           combo.addItem(plot.signal.label)
@@ -298,7 +298,32 @@ def general_connections(ui: Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph
   graph2.custom_viewbox.crop =crop_signal
   graph3.custom_viewbox.crop =crop_signal
 
-  # ui.crop_btn.clicked.connect(crop_signal) 
+
+  
+  def add_real_time():
+    selected_graph = ui.real_time_combo.currentIndex()
+    print(selected_graph)
+    if selected_graph == 0:
+      graph = graph1
+      list = ui.C1_list
+      combo = ui.choosesignalc1_combo
+    elif selected_graph == 1:
+      graph = graph2
+      list = ui.C2_list
+      combo = ui.choosesignalc2_combo
+    elif selected_graph == 2:
+      graph = graph3
+      list = ui.C3_list
+      combo = ui.choosesignalc3_combo
+      graph.plot_real_time(label="Real Time")
+      # print("Real Time" , graph.plots[0])
+      list.addItem("Real Time")
+      combo.addItem("Real Time")
+
+  ui.real_time_btn.clicked.connect(lambda: add_real_time())
+     
+  # ui.real_time_btn.clicked.connect()
+
   
 def update_signal_list(ui : Ui_MainWindow,signals:list[Signal]):
    
