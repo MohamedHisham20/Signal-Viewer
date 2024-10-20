@@ -315,10 +315,11 @@ def general_connections(ui: Ui_MainWindow,graph1:Graph,graph2:Graph,graph3:Graph
       graph = graph3
       list = ui.C3_list
       combo = ui.choosesignalc3_combo
-      graph.plot_real_time(label="Real Time")
-      # print("Real Time" , graph.plots[0])
-      list.addItem("Real Time")
-      combo.addItem("Real Time")
+    graph.plot_real_time(label="Real Time")
+    # print("Real Time" , graph.plots[0])
+    list.addItem("Real Time")
+    combo.addItem("Real Time")
+    print ("Real Time")
 
   ui.real_time_btn.clicked.connect(lambda: add_real_time())
      

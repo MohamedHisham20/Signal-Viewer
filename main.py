@@ -32,7 +32,7 @@ all_channels_connections(graph1=graph_C1,graph2=graph_C2,graph3=graph_C3,ui=ui,s
 NonRect_connections(NonRectGraph(ui.nonRect_widget), ui, signals)
 general_connections( ui,graph_C1,graph_C2,graph_C3,signals)
 
-# fake udate for real time
+# graph_C1.plot_real_time()
 # Qtimer = QtCore.QTimer()
 # Qtimer.timeout.connect(lambda: graph_C1.update_real_time(random.uniform(0, 1)))
 # Qtimer.start(1000)
