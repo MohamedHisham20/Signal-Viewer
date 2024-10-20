@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from PySide6.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
                                QTextEdit,
-                               QDialog, QFileDialog, QInputDialog, QSizePolicy)
+                               QDialog, QFileDialog, QInputDialog, QSizePolicy, QComboBox, QScrollArea)
 import pyqtgraph as pg
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -17,57 +17,49 @@ class GraphWindow(QWidget):
     def __init__(self, signals=None):
         super().__init__()
         self.setWindowTitle("Graph Cropping Example")
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(50, 30, 1080, 780)
 
         # Layout and plot widget
         self.layout = QVBoxLayout()
         self.graph = Graph()
         self.graph_widget = self.graph.plot_widget
         self.graph.custom_viewbox.crop = self.crop_graph_and_save
-        
-        
 
         self.layout.addWidget(self.graph_widget)
         self.data_dict = {}
 
         # Initial data and dataset dictionary
         for signal in signals:
-            self.data_dict[signal.ID] = signal.get_y_values()
-        self.data_key = signals[0].ID  # Default dataset
+            self.data_dict[signal.label] = signal.get_y_values()
+        self.data_key = signals[0].label  # Default dataset
         self.data = self.data_dict[self.data_key]
         self.plot = self.graph_widget.plot(self.data, pen='b')
 
-        self.graph.custom_viewbox.set_dynamic_limits(0, len(self.data) - 1, min(self.data), max(self.data))
+        self.graph.custom_viewbox.set_dynamic_limits(0, len(self.data), min(self.data), max(self.data))
 
-        # Input fields to select cropping points
-        self.start_label = QLabel("Start Point:")
-        self.start_input = QLineEdit()
-        self.end_label = QLabel("End Point:")
-        self.end_input = QLineEdit()
+        # set the range of the graph to open on the signal filling the screen
+        self.graph.custom_viewbox.setRange(xRange=(0, len(self.data)), yRange=(min(self.data), max(self.data)),
+                                           padding=0)
 
-        self.crop_button = QPushButton("Crop")
-        self.crop_button.clicked.connect(self.crop_graph_and_save)
+        # Dropdown menu for loading new graphs
+        self.graph_dropdown = QComboBox(self)
+        self.graph_dropdown.addItems(self.data_dict.keys())
+        self.graph_dropdown.currentIndexChanged.connect(self.load_new_graph)
+        self.layout.addWidget(self.graph_dropdown)
 
         # Button to create report
         self.report_button = QPushButton("Generate Report")
         self.report_button.clicked.connect(self.open_report_window)
-
-        # Button to load a new graph from the dictionary
-        self.new_graph_button = QPushButton("Load New Graph")
-        self.new_graph_button.clicked.connect(self.load_new_graph)
+        self.layout.addWidget(self.report_button)
 
         # Layout for cropping inputs and buttons
-        input_layout = QHBoxLayout()
-        input_layout.addWidget(self.start_label)
-        input_layout.addWidget(self.start_input)
-        input_layout.addWidget(self.end_label)
-        input_layout.addWidget(self.end_input)
-        input_layout.addWidget(self.crop_button)
-
-        # Add buttons to the main layout
-        self.layout.addLayout(input_layout)
-        self.layout.addWidget(self.new_graph_button)  # Add new graph button
-        self.layout.addWidget(self.report_button)
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_content = QWidget()
+        self.scroll_layout = QHBoxLayout(self.scroll_content)  # Set to horizontal layout
+        self.scroll_content.setLayout(self.scroll_layout)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.layout.addWidget(self.scroll_area)
 
         self.setLayout(self.layout)
 
@@ -82,33 +74,77 @@ class GraphWindow(QWidget):
             start = int(self.graph.custom_viewbox.selectfirstX)
             end = int(self.graph.custom_viewbox.selectseoncdX)
 
-            if start < 0 or end >= len(self.original_data) or start >= end:
-                raise ValueError("Invalid crop range")
+            if start < 0:
+                start = 0
+            if end < 0:
+                end = 0
+            if end >= len(self.original_data):
+                end = len(self.original_data) - 1
+            if start >= len(self.original_data):
+                start = len(self.original_data) - 1
+            if start > end:
+                start, end = end, start
 
             # Crop the data from the original data
             cropped_data = self.original_data[start:end]
             self.cropped_data.append(cropped_data)  # Store the current cropped data
             self.all_cropped_data.append(cropped_data)
 
-            # Plot the cropped data below the original graph
-            cropped_graph_widget = pg.PlotWidget()
-            cropped_graph_widget.plot(cropped_data, pen='r')
-            cropped_graph_widget.setFixedHeight(150)  # Set smaller height for each cropped graph
-            
-            self.graph.custom_viewbox.set_dynamic_limits(0, len(cropped_data) - 1, min(cropped_data), max(cropped_data))
-            self.layout.addWidget(cropped_graph_widget)
+            # Create a widget to hold the cropped graph and delete button
+            cropped_graph_container = QWidget()
+            cropped_graph_layout = QVBoxLayout(cropped_graph_container)
+
+            # Plot the cropped data in a new graph
+            cropped_graph_widget = Graph()
+            cropped_graph_widget.plot_widget.plot(cropped_data, pen='r')
+            cropped_graph_widget.setFixedWidth(400)  # Increase the width for larger appearance
+            cropped_graph_widget.custom_viewbox.set_dynamic_limits(0, len(cropped_data), min(cropped_data),
+                                                                   max(cropped_data))
+            cropped_graph_widget.custom_viewbox.setRange(xRange=(0, len(cropped_data)),
+                                                         yRange=(min(cropped_data), max(cropped_data)), padding=0)
+
+            # Create a delete button for this graph
+            delete_button = QPushButton("Delete", self)
+            delete_button.setFixedWidth(50)
+
+            # Connect the delete button to a function to remove the graph
+            delete_button.clicked.connect(lambda: self.delete_cropped_graph(cropped_graph_container, cropped_data))
+
+            # Add the cropped graph and delete button to the layout
+            cropped_graph_layout.addWidget(cropped_graph_widget)
+            cropped_graph_layout.addWidget(delete_button)
+
+            # # Add a double-click event to remove the graph
+            # cropped_graph_widget.mouseDoubleClickEvent = lambda event: self.delete_cropped_graph(cropped_graph_widget,
+            #                                                                                      cropped_data)
+
+            # Add the container widget to the scroll layout
+            self.scroll_layout.addWidget(cropped_graph_container)
 
             print(f"Cropped data from {start} to {end} added")
         except Exception as e:
             print(f"Error: {e}")
 
+    def delete_cropped_graph(self, graph_container, cropped_data):
+        """Remove the selected cropped graph and its data."""
+        # Remove the cropped graph widget from the layout
+        self.scroll_layout.removeWidget(graph_container)
+        graph_container.deleteLater()  # Delete the widget from memory
+
+        # Remove the corresponding data from the arrays
+        if cropped_data in self.cropped_data:
+            self.cropped_data.remove(cropped_data)
+        if cropped_data in self.all_cropped_data:
+            self.all_cropped_data.remove(cropped_data)
+
+        print("Cropped graph and data removed")
+
     def load_new_graph(self):
         """Load a new graph from the dictionary of datasets."""
         try:
-            # Prompt user to select a key from the dataset dictionary
-            key, ok = QInputDialog.getItem(self, "Select Graph", "Select a graph key:", self.data_dict.keys(), 0, False)
+            key = self.graph_dropdown.currentText()
 
-            if ok and key in self.data_dict:
+            if key in self.data_dict:
                 self.data_key = key
                 self.data = self.data_dict[self.data_key]
                 self.original_data = self.data  # Update the original data reference
@@ -118,7 +154,6 @@ class GraphWindow(QWidget):
                 self.plot = self.graph_widget.plot(self.data, pen='b')
 
                 # Reset cropped data list (since this is a new graph)
-                # self.all_cropped_data = []
                 self.cropped_data = []
                 print(f"New graph '{self.data_key}' loaded.")
             else:
@@ -142,8 +177,7 @@ class ReportWindow(QDialog):
         self.setWindowTitle("Generate Report")
 
         # Limit window size to a quarter of the screen
-        self.setGeometry(200, 200, 600, 500)
-        self.setMinimumSize(400, 300)
+        self.setGeometry(100, 100, 800, 600)  # Increase size for better display
 
         self.all_cropped_data = all_cropped_data  # Data passed from the main window
 
@@ -156,15 +190,25 @@ class ReportWindow(QDialog):
         self.report_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addWidget(self.report_text)
 
-        # Display the cropped data as graphs
+        # Scrollable area for the graphs
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_content = QWidget()
+        self.scroll_layout = QHBoxLayout(self.scroll_content)  # Horizontal layout for graphs
+        self.scroll_content.setLayout(self.scroll_layout)
+        self.scroll_area.setWidget(self.scroll_content)
+        layout.addWidget(self.scroll_area)
+
+        # Display the cropped data as graphs horizontally
         self.graph_widgets = []
         for cropped_data in self.all_cropped_data:
             graph_widget = pg.PlotWidget(self)
             graph_widget.plot(cropped_data, pen='black')
             graph_widget.setBackground('w')
-            graph_widget.setFixedHeight(150)  # Set smaller height for each graph
+            graph_widget.setFixedHeight(250)  # Adjusted height for a better display
+            graph_widget.setFixedWidth(400)  # Wider graphs for horizontal layout
             self.graph_widgets.append(graph_widget)
-            layout.addWidget(graph_widget)
+            self.scroll_layout.addWidget(graph_widget)
 
         # Button to save the report
         save_button = QPushButton("Save Report")
@@ -243,7 +287,7 @@ class ReportWindow(QDialog):
                 c.drawString(100, y_pos - 170, f"Graph {idx + 1}")
                 c.drawString(100, y_pos - 200,
                              f"Mean: {mean:.2f}, Std: {std:.2f}, Max: {max_point:.2f}, Min: {min_point:.2f}")
-                y_pos -= 220  # Move down to leave space for next image
+                y_pos -= 220  # Move down to leave space for the next image
 
                 if y_pos < 150:
                     c.showPage()  # Create a new page if needed
@@ -261,10 +305,3 @@ class ReportWindow(QDialog):
 def open_report_window():
     graph_window = GraphWindow(Signal.get_all_signals(True))
     graph_window.show()
-    # graph_window.exec()
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     main_window = GraphWindow(Signal.get_all_signals(True))
-#     main_window.show()
-#     sys.exit(app.exec())
