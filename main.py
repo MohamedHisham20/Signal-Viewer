@@ -7,6 +7,7 @@ from Connections import (
     all_channels_connections,
     add_lists,
     general_connections,
+    report_connections,
 )
 import sys
 from Signal import Signal
@@ -31,6 +32,8 @@ Graph_connections(graph_C3, ui, signals,3)
 all_channels_connections(graph1=graph_C1,graph2=graph_C2,graph3=graph_C3,ui=ui,signals=signals)
 NonRect_connections(NonRectGraph(ui.nonRect_widget), ui, signals)
 general_connections( ui,graph_C1,graph_C2,graph_C3,signals)
+report_connections(ui,signals)
+
 
 # graph_C1.plot_real_time()
 # Qtimer = QtCore.QTimer()

@@ -9,6 +9,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from pyqtgraph.exporters import ImageExporter
 
+from Graph import Graph
+from Signal import Signal
+
 
 class GraphWindow(QWidget):
     def __init__(self, signals=None):
@@ -18,7 +21,12 @@ class GraphWindow(QWidget):
 
         # Layout and plot widget
         self.layout = QVBoxLayout()
-        self.graph_widget = pg.PlotWidget()
+        self.graph = Graph()
+        self.graph_widget = self.graph.plot_widget
+        self.graph.custom_viewbox.crop = self.crop_graph_and_save
+        
+        
+
         self.layout.addWidget(self.graph_widget)
         self.data_dict = {}
 
@@ -28,6 +36,8 @@ class GraphWindow(QWidget):
         self.data_key = signals[0].ID  # Default dataset
         self.data = self.data_dict[self.data_key]
         self.plot = self.graph_widget.plot(self.data, pen='b')
+
+        self.graph.custom_viewbox.set_dynamic_limits(0, len(self.data) - 1, min(self.data), max(self.data))
 
         # Input fields to select cropping points
         self.start_label = QLabel("Start Point:")
@@ -69,8 +79,8 @@ class GraphWindow(QWidget):
     def crop_graph_and_save(self):
         """Crop the selected graph based on start and end inputs."""
         try:
-            start = int(self.start_input.text())
-            end = int(self.end_input.text())
+            start = int(self.graph.custom_viewbox.selectfirstX)
+            end = int(self.graph.custom_viewbox.selectseoncdX)
 
             if start < 0 or end >= len(self.original_data) or start >= end:
                 raise ValueError("Invalid crop range")
@@ -84,6 +94,8 @@ class GraphWindow(QWidget):
             cropped_graph_widget = pg.PlotWidget()
             cropped_graph_widget.plot(cropped_data, pen='r')
             cropped_graph_widget.setFixedHeight(150)  # Set smaller height for each cropped graph
+            
+            self.graph.custom_viewbox.set_dynamic_limits(0, len(cropped_data) - 1, min(cropped_data), max(cropped_data))
             self.layout.addWidget(cropped_graph_widget)
 
             print(f"Cropped data from {start} to {end} added")
@@ -196,7 +208,7 @@ class ReportWindow(QDialog):
             y_pos = height - 120
 
             # Add text content with a subtle border
-            c.rect(80, y_pos + 20 , width - 160, -(len(text_lines) * 15 + 20))  # Border for the text area
+            c.rect(80, y_pos + 20, width - 160, -(len(text_lines) * 15 + 20))  # Border for the text area
             for line in text_lines:
                 c.drawString(100, y_pos, line)
                 y_pos -= 15
@@ -245,8 +257,14 @@ class ReportWindow(QDialog):
             c.save()
             print(f"Report saved to {file_name}")
 
+
+def open_report_window():
+    graph_window = GraphWindow(Signal.get_all_signals(True))
+    graph_window.show()
+    # graph_window.exec()
+
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)
-#     main_window = GraphWindow(data_dict=None)
+#     main_window = GraphWindow(Signal.get_all_signals(True))
 #     main_window.show()
-#     sys.exit(app.exec_())
+#     sys.exit(app.exec())
