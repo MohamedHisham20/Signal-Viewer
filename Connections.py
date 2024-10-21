@@ -53,6 +53,7 @@ def Graph_connections(graph: Graph,ui :Ui_MainWindow,signals:list[Signal],channe
         ui.addsignalc1_combo.addItems([signal.label for signal in signals])
 
         def add_signal():
+            # update_signal_list(ui,signals)
             signal = signals[ui.addsignalc1_combo.currentIndex()]
             # check what is the last point of any ploted signal
 

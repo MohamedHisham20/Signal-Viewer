@@ -110,7 +110,7 @@ class Graph(QWidget):
         self.AllSignals :list[Signal] = Signal.get_all_signals(True)
         self.panWidth = 10
         self.plots: list[Plot] = []
-        self.last_point = 100
+        self.last_point = 0
         self.shift_slide = 0.0
         self.croped_count = 0
         self.plot_widget.setXRange(0, 10, padding=0)
@@ -129,12 +129,13 @@ class Graph(QWidget):
             plot.isRunning = play
 
     def delete_signal(self,signal:Signal):
-        print("Signal not found")
+        # print("Signal not found")
         for plot in self.plots:
             if plot.signal.label == signal.label:
                 self.plot_widget.removeItem(plot.plot)
                 self.plot_widget.removeItem(plot.label)
                 self.plots.remove(plot)
+                # plot.__delattr__("plot")
                 if len(self.plots) == 0:
                     self.timer.stop()
                 break
@@ -162,7 +163,7 @@ class Graph(QWidget):
         return None
     def plot_signal(self, signal: Signal,last_point:float = 0 , shift : int= 0) -> Plot:
         # if signal already plotted
-        last_point = int(len(signal.data_pnts) * last_point) + shift
+        last_point = int(len(signal.data_pnts) * last_point)
         print(last_point)
         # add the shift to the x values
         signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
@@ -175,15 +176,15 @@ class Graph(QWidget):
         label = pg.TextItem(text=signal.label, color=signal.color, anchor=(1, 1))
         self.plot_widget.addItem(label)
         plot = Plot(curve, signal, label)
-        self.plots.append(plot)
         plot.last_point = last_point
         plot.signal.shift = shift
         self.plot_widget.addItem(plot.plot)
-        if len(self.plots) == 1:
+        if len(self.plots) == 0:
             self.plot_to_track = plot
             self.change_pan_window(plot,0.1)
             self.timer.timeout.connect(self.update)
             self.timer.start(50)
+        self.plots.append(plot)
         return plot
 
     def Calculate_min_max(self):
@@ -250,6 +251,9 @@ class Graph(QWidget):
                     last_x = plot.signal.data_pnts[-1][0]
                     last_y = plot.signal.data_pnts[-1][1]
                     plot.signal.data_pnts.append((last_x + 1, last_y))
+            # if signal empty continue
+            if len(plot.signal.data_pnts) == 0:
+                continue
             plot.plot.setData([point[0] for point in plot.signal.data_pnts[:plot.last_point]], 
                               [point[1] for point in plot.signal.data_pnts[:plot.last_point]])
             index = plot.last_point - 1
@@ -258,12 +262,14 @@ class Graph(QWidget):
             print(plot.last_point ,"len",len(plot.signal.data_pnts))
 
             plot.label.setPos(plot.signal.data_pnts[index][0], plot.signal.data_pnts[index][1])
-
+        if len(self.plot_to_track.signal.data_pnts) == 0:
+            self.timer.stop()
+            return
         min_x, max_x, min_y, max_y = self.Calculate_min_max()
         margin_x = (max_x - min_x) * 0.01
-        margin_y = (max_y - min_y) * 0.1
+        margin_y = (max_y - min_y) * 0.5
         # min_x -= margin_x
-        max_x += margin_x
+        # max_x += margin_x
         min_y -= margin_y
         max_y += margin_y
         self.custom_viewbox.signal_max_x = max_x
@@ -284,7 +290,9 @@ class Graph(QWidget):
             self.custom_viewbox.is_user_panning = False
 
         if not self.custom_viewbox.is_user_panning and longest.isRunning:
-            self.plot_widget.setXRange(longest.last_point - self.shift_slide * longest.last_point + longest.signal.shift, self.panWidth + longest.last_point - self.shift_slide * longest.last_point + longest.signal.shift, padding=0)
+            end = longest.signal.data_pnts[longest.last_point][0]
+            start = end - self.panWidth
+            self.plot_widget.setXRange(start, end, padding=0)
             self.plot_widget.setYRange(min_y, max_y, padding=0)
 
     def update_old(self):
