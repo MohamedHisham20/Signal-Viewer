@@ -118,7 +118,8 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         ui.choosesignalc1_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_btn.setValue(0)
-        ui.dial_slide_c1.valueChanged.connect(change_pan)
+        # ui.dial_slide_c1.valueChanged.connect(change_pan)
+        ui.dial_slide_c1.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c1.value()/100.0))
 
     elif channel == 2:
         ui.addsignalc2_combo.addItems([signal.label for signal in signals])
@@ -335,7 +336,7 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
 
     def add_real_time():
         selected_graph = ui.real_time_combo.currentIndex()
-        print(selected_graph)
+        # print(selected_graph)
         if selected_graph == 0:
             graph = graph1
             list = ui.C1_list
@@ -352,7 +353,7 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
         # print("Real Time" , graph.plots[0])
         list.addItem("Real Time")
         combo.addItem("Real Time")
-        print("Real Time")
+        # print("Real Time")
 
     ui.real_time_btn.clicked.connect(lambda: add_real_time())
 
@@ -373,3 +374,7 @@ def update_signal_list(ui: Ui_MainWindow, signals: list[Signal]):
 
 def report_connections(ui: Ui_MainWindow, signals: list[Signal]):
     ui.report_btn.clicked.connect(open_report_window)
+
+def glue_connections(ui: Ui_MainWindow,graph1: Graph, graph2: Graph, graph3: Graph ,signals: list[Signal]):
+    
+    pass

@@ -68,7 +68,7 @@ class CustomViewBox(pg.ViewBox):
                 self.removeItem(self.roi)
                 self.roi = None
                 self.crop()
-                print(f"Selected X range: {bottom_left} to {bottom_right}")
+                # print(f"Selected X range: {bottom_left} to {bottom_right}")
                 # print(f"Selected X range: {bottom_left} to {bottom_right}")
 
 
@@ -164,7 +164,7 @@ class Graph(QWidget):
     def plot_signal(self, signal: Signal,last_point:float = 0 , shift : int= 0) -> Plot:
         # if signal already plotted
         last_point = int(len(signal.data_pnts) * last_point)
-        print(last_point)
+        # print(last_point)
         # add the shift to the x values
         signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
         for plot in self.plots:
@@ -186,6 +186,17 @@ class Graph(QWidget):
             self.timer.start(50)
         self.plots.append(plot)
         return plot
+    
+    def sihftX(self,shift:float):
+        if self.plot_to_track is None:
+            return
+        minX = self.plot_to_track.signal.data_pnts[0][0]
+        maxX = self.plot_to_track.signal.data_pnts[-1][0]
+        shift = int((maxX - minX) * shift)
+        plot = self.plot_to_track
+        plot.signal.shift
+        plot.signal.data_pnts = [(x - plot.signal.shift + shift, y) for x, y in plot.signal.data_pnts]
+        plot.signal.shift = shift
 
     def Calculate_min_max(self):
         all_x_values = []
@@ -259,7 +270,7 @@ class Graph(QWidget):
             index = plot.last_point - 1
             if index >= len(plot.signal.data_pnts) or index < 0:
                 index = len(plot.signal.data_pnts) - 1
-            print(plot.last_point ,"len",len(plot.signal.data_pnts))
+            # print(plot.last_point ,"len",len(plot.signal.data_pnts))
 
             plot.label.setPos(plot.signal.data_pnts[index][0], plot.signal.data_pnts[index][1])
         if len(self.plot_to_track.signal.data_pnts) == 0:
@@ -284,8 +295,8 @@ class Graph(QWidget):
         )
 
         longest = self.plot_to_track
-        print("label",longest.signal.label)
-        print("last point",longest.last_point,"len",len(longest.signal.data_pnts))
+        # print("label",longest.signal.label)
+        # print("last point",longest.last_point,"len",len(longest.signal.data_pnts))
         if self.custom_viewbox.elapsed_timer.elapsed() > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
             self.custom_viewbox.is_user_panning = False
 
