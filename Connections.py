@@ -5,6 +5,7 @@ from PySide6 import QtWidgets
 from Signal import Signal
 from Graph import Graph
 from report import open_report_window
+from Glue import glue_signals
 
 
 def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
@@ -382,6 +383,45 @@ def update_signal_list(ui: Ui_MainWindow, signals: list[Signal]):
 def report_connections(ui: Ui_MainWindow, signals: list[Signal]):
     ui.report_btn.clicked.connect(open_report_window)
 
-def glue_connections(ui: Ui_MainWindow,graph1: Graph, graph2: Graph, graph3: Graph ,signals: list[Signal]):
+def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
+    def populate_combo_boxes(channel_index=0):
+        ui.glue_signal1_combo.clear()
+        ui.glue_singal2_combo.clear()
+        if channel_index == 0:
+            graph = graph1
+        elif channel_index == 1:
+            graph = graph2
+        elif channel_index == 2:
+            graph = graph3
 
-    pass
+        ui.glue_signal1_combo.addItems([plot.signal.label for plot in graph.plots])
+        ui.glue_singal2_combo.addItems([plot.signal.label for plot in graph.plots])
+        ui.glue_singal2_combo.setCurrentIndex(len(graph.plots) - 1)
+
+    def on_tab_changed(index):
+        if ui.Channals.tabText(index) == "General":
+            ui.glue_combo_Channal.setCurrentIndex(0)
+            populate_combo_boxes()
+
+    def glue():
+        glued_signal = glue_signals(graph1.plots[ui.glue_signal1_combo.currentIndex()].signal,
+                                    graph1.plots[ui.glue_singal2_combo.currentIndex()].signal)
+        channel_index = ui.glue_combo_Channal.currentIndex()
+        if channel_index == 0:
+            graph = graph1
+        elif channel_index == 1:
+            graph = graph2
+        elif channel_index == 2:
+            graph = graph3
+
+        graph.plot_signal(glued_signal)  # Draw entire signal, don't start drawing point by point
+        # add signal to list
+
+
+    ui.Channals.currentChanged.connect(on_tab_changed)
+    ui.glue_combo_Channal.clear()
+    ui.glue_combo_Channal.addItems(["Channel 1", "Channel 2", "Channel 3"])
+    ui.glue_combo_Channal.currentIndexChanged.connect(lambda: populate_combo_boxes(ui.glue_combo_Channal.currentIndex()))
+    ui.glue_combo_Channal.setCurrentIndex(0)
+    ui.glue_btn.clicked.connect(glue)
+

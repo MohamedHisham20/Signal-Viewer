@@ -92,7 +92,7 @@ class Signal:
     @staticmethod
     def from_pd_df(df):
         Signal.glued_signal_counter += 1
-        data_pnts = [(row[0], row[1]) for row in df.iterrows()]
+        data_pnts = [(row[0], row[1]) for _, row in df.iterrows()]
         label = "Glued_Signal_" + str(Signal.glued_signal_counter)
         return Signal(data_pnts, label)
 

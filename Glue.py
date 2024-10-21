@@ -74,7 +74,7 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
 
     # Ensure there is a gap
     if gap_start >= gap_end:
-        return pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
+        return Signal.from_pd_df(pd.concat([signal1_df, signal2_df]).sort_values(by='x').reset_index(drop=True))
 
     coefficients_1 = np.polyfit(signal1_df['x'], signal1_df['y'], interpolation_degree)
     coefficients_2 = np.polyfit(signal2_df['x'], signal2_df['y'], interpolation_degree)

@@ -8,6 +8,7 @@ from Connections import (
     add_lists,
     general_connections,
     report_connections,
+    glue_connections,
 )
 import sys
 from Signal import Signal
@@ -33,6 +34,7 @@ all_Channals_connections(graph1=graph_C1,graph2=graph_C2,graph3=graph_C3,ui=ui,s
 NonRect_connections(NonRectGraph(ui.nonRect_widget), ui, signals)
 general_connections( ui,graph_C1,graph_C2,graph_C3,signals)
 report_connections(ui,signals)
+glue_connections(ui,graph_C1,graph_C2,graph_C3,signals)
 
 
 # graph_C1.plot_real_time()
