@@ -30,7 +30,7 @@ def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
 
 
 def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Signal]):
-    ui.Channels.setFixedHeight(400)
+    ui.Channals.setFixedHeight(400)
     if ui.nonRect_widget.layout() is None:
         layout = QtWidgets.QHBoxLayout(ui.nonRect_widget)
         ui.nonRect_widget.setLayout(layout)
@@ -53,8 +53,8 @@ def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Si
     })
 
 
-def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], channel: int):
-    if channel == 1:
+def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Channal: int):
+    if Channal == 1:
         ui.addsignalc1_combo.addItems([signal.label for signal in signals])
 
         def add_signal():
@@ -123,7 +123,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
         # ui.dial_slide_c1.valueChanged.connect(change_pan)
         ui.dial_slide_c1.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c1.value()/100.0))
 
-    elif channel == 2:
+    elif Channal == 2:
         ui.addsignalc2_combo.addItems([signal.label for signal in signals])
 
         # ui.choosesignalc2_combo.addItems()
@@ -193,7 +193,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
         # ui.dial_slide_c2.valueChanged.connect(change_pan)
         ui.dial_slide_c2.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c2.value()/100.0))
 
-    elif channel == 3:
+    elif Channal == 3:
         ui.addsignalc3_combo.addItems([signal.label for signal in signals])
 
         # ui.choosesignalc3_combo.addItems()
@@ -266,7 +266,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
         ui.dial_slide_c3.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c3.value()/100.0))
 
 
-def all_channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
+def all_Channals_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
     def play_all():
         graph1.play_pause(play=True)
         graph2.play_pause(play=True)
@@ -309,7 +309,7 @@ def all_channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
 def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
     def crop_signal():
         # print("Cropping")
-        # selected_channel = ui.crop_combo.currentIndex()+1
+        # selected_Channal = ui.crop_combo.currentIndex()+1
         from_c1 = graph1.crop_signal()
         from_c2 = graph2.crop_signal()
         from_c3 = graph3.crop_signal()
