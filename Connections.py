@@ -1,4 +1,6 @@
+import pyqtgraph as pg
 import copy
+
 from MainWindow import DragDropList, Ui_MainWindow
 from NonRectGraphController import NonRectGraph
 from PySide6 import QtWidgets
@@ -7,7 +9,6 @@ from Graph import Graph
 from report import open_report_window
 from Glue import glue_signals
 from WeatherDataFetcher import WeatherDataFetcher
-import time as t
 
 
 def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
@@ -407,8 +408,6 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
             populate_combo_boxes()
 
     def glue():
-        glued_signal = glue_signals(graph1.plots[ui.glue_signal1_combo.currentIndex()].signal,
-                                    graph1.plots[ui.glue_singal2_combo.currentIndex()].signal)
         channel_index = ui.glue_combo_Channal.currentIndex()
         if channel_index == 0:
             graph = graph1
@@ -417,8 +416,19 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
         elif channel_index == 2:
             graph = graph3
 
-        graph.plot_signal(glued_signal)  # Draw entire signal, don't start drawing point by point
+        print(channel_index)
+        print(graph.plots)
+
+        glued_signal = glue_signals(graph.plots[ui.glue_signal1_combo.currentIndex()].signal,
+                                    graph.plots[ui.glue_singal2_combo.currentIndex()].signal)
+
+        # graph.plot_signal(glued_signal)  # Draw entire signal, don't start drawing point by point
         # add signal to list
+        curve = pg.PlotDataItem(glued_signal.get_x_values(), glued_signal.get_y_values(), pen=pg.mkPen(glued_signal.color, width=2))
+        label = pg.TextItem(text=glued_signal.label, color=glued_signal.color, anchor=(1, 1))
+        graph.plot_widget.addItem(curve)
+        graph.plot_widget.addItem(label)
+        # graph.plot_widget.loa
 
     ui.Channals.currentChanged.connect(on_tab_changed)
     ui.glue_combo_Channal.clear()

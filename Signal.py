@@ -99,6 +99,9 @@ class Signal:
     def get_y_values(self):
         return [pnt[1] for pnt in self.data_pnts]
 
+    def get_x_values(self):
+        return [pnt[0] for pnt in self.data_pnts]
+
     def append_point(self, x, y):
         self.data_pnts.append((x, y))
         self.data_qpnts.append(QPointF(x, y))
