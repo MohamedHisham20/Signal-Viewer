@@ -51,7 +51,7 @@ class Signal:
 
     @staticmethod
     def get_all_signals(is_normalized=False):
-        folderPath = os.path.dirname(os.path.abspath(__file__))
+        folderPath = os.path.dirname(os.path.abspath(__file__)) + '/Signals'
         return Signal.load_directory(folderPath, is_normalized)
 
     @staticmethod

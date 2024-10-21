@@ -9,11 +9,12 @@ from Connections import (
     general_connections,
     report_connections,
     glue_connections,
+    api_connection,
 )
 import sys
 from Signal import Signal
 from Graph import Graph
-import random
+
 app = QtWidgets.QApplication(sys.argv)
 MainWindow = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
@@ -35,6 +36,7 @@ NonRect_connections(NonRectGraph(ui.nonRect_widget), ui, signals)
 general_connections( ui,graph_C1,graph_C2,graph_C3,signals)
 report_connections(ui,signals)
 glue_connections(ui,graph_C1,graph_C2,graph_C3,signals)
+api_connection(ui,graph_C1,graph_C2,graph_C3,signals)
 
 
 # graph_C1.plot_real_time()

@@ -349,7 +349,7 @@ class Graph(QWidget):
         return 0
 
 
-    def plot_real_time(self,shift:int = 0.0 ,label:str = "RealTimeSignal") -> Plot:
+    def plot_real_time(self,shift:int = 0.0 ,label:str="Wind Speed") -> Plot:
         signal = Signal(label=label, data_pnts=[(0, 0), (1, 1)], color='#FF0000')
         last_point = int(1+shift)
         # add the shift to the x values

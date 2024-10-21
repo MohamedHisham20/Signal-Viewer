@@ -2,6 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 import time
+import random
 
 from PySide6.QtCore import QThread
 from PySide6.QtCore import Signal as QTSignal
@@ -25,7 +26,7 @@ class WeatherDataFetcher(QThread):
         if not api_key:
             raise Exception("API key not found. Set it in a .env file or as an environment variable.")
 
-        url = f"http://api.openweathermap.org/data/2.5/weather?lat={self.Fukuoka_lat}&lon={self.Fukuoka_lon}&appid={api_key}&units=metric"
+        url = f"http://api.openweathermap.org/data/2.5/weather?lat={self.Gaza_lat}&lon={self.Gaza_lon}&appid={api_key}&units=metric"
         # Data in this api is updated around every 10 minutes
 
         while True:
@@ -39,7 +40,11 @@ class WeatherDataFetcher(QThread):
 
             if response.status_code == 200:
                 wind_speed = weather_data["wind"]["speed"]
-                self.weather_data_fetched.emit(wind_speed, elapsed_time)
+
+                adjustment_factor = random.uniform(0.9, 1.1)
+                adjusted_wind_speed = wind_speed * adjustment_factor
+
+                self.weather_data_fetched.emit(adjusted_wind_speed, elapsed_time)
             else:
                 print("Failed to retrieve weather data:", weather_data.get("message", "Unknown error"))
 

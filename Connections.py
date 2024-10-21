@@ -6,6 +6,8 @@ from Signal import Signal
 from Graph import Graph
 from report import open_report_window
 from Glue import glue_signals
+from WeatherDataFetcher import WeatherDataFetcher
+import time as t
 
 
 def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
@@ -122,7 +124,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         ui.choosesignalc1_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_btn.setValue(0)
         # ui.dial_slide_c1.valueChanged.connect(change_pan)
-        ui.dial_slide_c1.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c1.value()/100.0))
+        ui.dial_slide_c1.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c1.value() / 100.0))
 
     elif Channal == 2:
         ui.addsignalc2_combo.addItems([signal.label for signal in signals])
@@ -192,7 +194,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         ui.choosesignalc2_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_c2.setValue(0)
         # ui.dial_slide_c2.valueChanged.connect(change_pan)
-        ui.dial_slide_c2.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c2.value()/100.0))
+        ui.dial_slide_c2.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c2.value() / 100.0))
 
     elif Channal == 3:
         ui.addsignalc3_combo.addItems([signal.label for signal in signals])
@@ -264,7 +266,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         ui.choosesignalc3_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_c3.setValue(0)
         # ui.dial_slide_c3.valueChanged.connect(change_pan)
-        ui.dial_slide_c3.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c3.value()/100.0))
+        ui.dial_slide_c3.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c3.value() / 100.0))
 
 
 def all_Channals_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
@@ -383,6 +385,7 @@ def update_signal_list(ui: Ui_MainWindow, signals: list[Signal]):
 def report_connections(ui: Ui_MainWindow, signals: list[Signal]):
     ui.report_btn.clicked.connect(open_report_window)
 
+
 def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
     def populate_combo_boxes(channel_index=0):
         ui.glue_signal1_combo.clear()
@@ -417,11 +420,32 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
         graph.plot_signal(glued_signal)  # Draw entire signal, don't start drawing point by point
         # add signal to list
 
-
     ui.Channals.currentChanged.connect(on_tab_changed)
     ui.glue_combo_Channal.clear()
     ui.glue_combo_Channal.addItems(["Channel 1", "Channel 2", "Channel 3"])
-    ui.glue_combo_Channal.currentIndexChanged.connect(lambda: populate_combo_boxes(ui.glue_combo_Channal.currentIndex()))
+    ui.glue_combo_Channal.currentIndexChanged.connect(
+        lambda: populate_combo_boxes(ui.glue_combo_Channal.currentIndex()))
     ui.glue_combo_Channal.setCurrentIndex(0)
     ui.glue_btn.clicked.connect(glue)
 
+
+def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
+    def fetch_weather_data():
+        weather_fetcher = WeatherDataFetcher()
+        if ui.real_time_combo.currentIndex() == 0:
+            graph = graph1
+        elif ui.real_time_combo.currentIndex() == 1:
+            graph = graph2
+        elif ui.real_time_combo.currentIndex() == 2:
+            graph = graph3
+        graph.plot_real_time()
+
+        def update_points_from_api(wind_speed, time):
+            print(wind_speed, time)
+            graph.update_real_time(wind_speed)
+
+        weather_fetcher.weather_data_fetched.connect(update_points_from_api)
+        weather_fetcher.start()
+        ui.weather_fetchers.append(weather_fetcher)
+
+    ui.real_time_btn.clicked.connect(fetch_weather_data)

@@ -16,6 +16,7 @@ from styleSheet import styleSheet
 
 class Ui_MainWindow(QMainWindow):
     def setupUi(self, MainWindow):
+        self.weather_fetchers = []
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1514, 899)
         MainWindow.setMinimumSize(QtCore.QSize(1000, 0))
@@ -573,6 +574,12 @@ class Ui_MainWindow(QMainWindow):
         self.C1_graph_label.setText(_translate("MainWindow", "Channal 1"))
         self.C2_graph_label.setText(_translate("MainWindow", "Channal 2"))
         self.C3_graph_label.setText(_translate("MainWindow", "Channal 3"))
+
+    def closeEvent(self, event):
+        for weather_fetcher in self.weather_fetchers:
+            weather_fetcher.stop()
+            weather_fetcher.quit()
+        event.accept()
 
 class DragDropList(QListWidget):
     def __init__(self, parent=None):
