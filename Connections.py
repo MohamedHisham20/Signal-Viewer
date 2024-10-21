@@ -1,3 +1,4 @@
+import copy
 from MainWindow import DragDropList, Ui_MainWindow
 from NonRectGraphController import NonRectGraph
 from PySide6 import QtWidgets
@@ -58,7 +59,8 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         def add_signal():
             # update_signal_list(ui,signals)
-            signal = signals[ui.addsignalc1_combo.currentIndex()]
+            # signal = signals[ui.addsignalc1_combo.currentIndex()]
+            signal = copy.deepcopy(signals[ui.addsignalc1_combo.currentIndex()])
             # check what is the last point of any ploted signal
 
             last_point = graph.get_last_point()
@@ -129,7 +131,8 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         # ui.C2_widget.layout().addWidget(graph.plot_widget)
         def add_signal():
-            signal = signals[ui.addsignalc2_combo.currentIndex()]
+            # signal = signals[ui.addsignalc2_combo.currentIndex()]
+            signal = copy.deepcopy(signals[ui.addsignalc2_combo.currentIndex()])
             # Check if the signal already exists in the combo box
             last_point = graph.get_last_point()
             if signal.label not in [ui.choosesignalc2_combo.itemText(i) for i in
@@ -187,7 +190,8 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         ui.choosesignalc2_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_c2.setValue(0)
-        ui.dial_slide_c2.valueChanged.connect(change_pan)
+        # ui.dial_slide_c2.valueChanged.connect(change_pan)
+        ui.dial_slide_c2.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c2.value()/100.0))
 
     elif channel == 3:
         ui.addsignalc3_combo.addItems([signal.label for signal in signals])
@@ -197,7 +201,9 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         # ui.C3_widget.layout().addWidget(graph.plot_widget)
         def add_signal():
-            signal = signals[ui.addsignalc3_combo.currentIndex()]
+            # signal = signals[ui.addsignalc3_combo.currentIndex()]
+            signal = copy.deepcopy(signals[ui.addsignalc3_combo.currentIndex()])
+
             # Check if the signal already exists in the combo box
             last_point = graph.get_last_point()
             if signal.label not in [ui.choosesignalc3_combo.itemText(i) for i in
@@ -256,7 +262,8 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], ch
 
         ui.choosesignalc3_combo.currentIndexChanged.connect(change_pan)
         ui.dial_slide_c3.setValue(0)
-        ui.dial_slide_c3.valueChanged.connect(change_pan)
+        # ui.dial_slide_c3.valueChanged.connect(change_pan)
+        ui.dial_slide_c3.valueChanged.connect(lambda : graph.sihftX(ui.dial_slide_c3.value()/100.0))
 
 
 def all_channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
@@ -376,5 +383,5 @@ def report_connections(ui: Ui_MainWindow, signals: list[Signal]):
     ui.report_btn.clicked.connect(open_report_window)
 
 def glue_connections(ui: Ui_MainWindow,graph1: Graph, graph2: Graph, graph3: Graph ,signals: list[Signal]):
-    
+
     pass
