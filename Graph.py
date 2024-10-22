@@ -120,7 +120,48 @@ class Graph(QWidget):
         self.plot_widget.setXRange(0, 10, padding=0)
         self.plot_widget.setYRange(-1, 1, padding=0)
         self.timer = QTimer()
+        self.interploation_timer = QTimer()
+        self.interploation_cool_down = False
+        self.counter = 0
+        def cool_down():
+            # if self.counter == 1:
+            #     self.interploation_cool_down = False
+            #     self.interploation_timer.stop()
+            #     self.counter = 0
+            # self.interploation_cool_down = True
+            # # self.interploation_timer.stop()
+            # self.counter +=1
+            self.interploation_cool_down = False
+            self.interploation_timer.stop()
+        self.interploation_timer.timeout.connect(cool_down)
 
+
+    def udate_interpolation(self):
+        if self.interploation_cool_down:
+            return
+        for plot in self.plots:
+            if plot.dynamic_interpolation:
+                glued_signal = glue_signals(plot.plot1_interpolation.signal,plot.plot2_interpolation.signal)
+                plot.signal = glued_signal
+                maxX = max(plot.plot1_interpolation.signal.data_pnts[plot.plot1_interpolation.last_point][0], plot.plot2_interpolation.signal.data_pnts[plot.plot2_interpolation.last_point][0])
+                def find_last_index(glued_signal, maxX):
+                    epsilon = 1e-9 
+                    low, high = 0, len(glued_signal.data_pnts) - 1
+                    while low < high:
+                        mid = (low + high) // 2
+                        if glued_signal.data_pnts[mid][0] < maxX - epsilon:
+                            low = mid + 1
+                        else:
+                            high = mid
+                    if low < len(glued_signal.data_pnts) and glued_signal.data_pnts[low][0] > maxX + epsilon:
+                        low -= 1  
+                    return low
+                last_index = find_last_index(glued_signal, maxX)
+                plot.plot.setData([point[0] for point in glued_signal.data_pnts[:]], 
+                              [point[1] for point in glued_signal.data_pnts[:]])
+
+        self.interploation_cool_down = True
+        self.interploation_timer.start(1000)
 
     def change_speed(self,speed:int):
         self.timer.start(speed)

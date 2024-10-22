@@ -122,9 +122,12 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
                 graph.change_pan_window(plot, ui.dial_slide_c1.value() / 100)
 
         ui.choosesignalc1_combo.currentIndexChanged.connect(change_pan)
-        ui.dial_slide_btn.setValue(0)
+        # ui.dial_slide_c1.setValue(0)
         # ui.dial_slide_c1.valueChanged.connect(change_pan)
-        ui.dial_slide_c1.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c1.value() / 100.0))
+        ui.dial_slide_c1.valueChanged.connect(lambda: {
+            graph.sihftX(ui.dial_slide_c1.value() / 100.0),
+            graph.udate_interpolation()
+        })
 
     elif Channel == 2:
         ui.addsignalc2_combo.addItems([signal.label for signal in signals])
@@ -239,7 +242,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
                 graph.play_pause(play=False)
 
         ui.play_c3.clicked.connect(play)
-        ui.play_c3.clicked.connect(stop)
+        ui.stop_c3.clicked.connect(stop)
         ui.dial_speed_c3.setRange(10, 100)
         ui.dial_speed_c3.setValue(10)
         ui.dial_speed_c3.valueChanged.connect(lambda: graph.change_speed(100 - ui.dial_speed_c3.value()))
@@ -464,7 +467,7 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
             return low
         last_index = find_last_index(glued_signal, maxX)
         last_point = last_index / len(glued_signal.data_pnts)
-        print(last_point)
+        # print(last_point)
         signals.append(glued_signal)
         update_signal_list(ui, signals)
         plot = graph.plot_signal(glued_signal,last_point)
