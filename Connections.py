@@ -240,7 +240,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
                 graph.play_pause(play=False)
 
         ui.play_c3.clicked.connect(play)
-        ui.play_c3.clicked.connect(stop)
+        ui.stop_c3.clicked.connect(stop)
         ui.dial_speed_c3.setRange(10, 100)
         ui.dial_speed_c3.setValue(10)
         ui.dial_speed_c3.valueChanged.connect(lambda: graph.change_speed(100 - ui.dial_speed_c3.value()))
@@ -345,30 +345,55 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
     graph2.custom_viewbox.crop = crop_signal
     graph3.custom_viewbox.crop = crop_signal
 
-    def add_real_time():
-        selected_graph = ui.real_time_combo.currentIndex()
-        # print(selected_graph)
-        if selected_graph == 0:
+    # def add_real_time():
+    #     selected_graph = ui.real_time_combo.currentIndex()
+    #     # print(selected_graph)
+    #     if selected_graph == 0:
+    #         graph = graph1
+    #         list = ui.C1_list
+    #         combo = ui.choosesignalc1_combo
+    #     elif selected_graph == 1:
+    #         graph = graph2
+    #         list = ui.C2_list
+    #         combo = ui.choosesignalc2_combo
+    #     elif selected_graph == 2:
+    #         graph = graph3
+    #         list = ui.C3_list
+    #         combo = ui.choosesignalc3_combo
+    #     graph.plot_real_time(label="Real Time")
+    #     # print("Real Time" , graph.plots[0])
+    #     list.addItem("Real Time")
+    #     combo.addItem("Real Time")
+
+    def fetch_weather_data():
+        weather_fetcher = WeatherDataFetcher()
+        if ui.real_time_combo.currentIndex() == 0:
             graph = graph1
             list = ui.C1_list
             combo = ui.choosesignalc1_combo
-        elif selected_graph == 1:
+        elif ui.real_time_combo.currentIndex() == 1:
             graph = graph2
             list = ui.C2_list
             combo = ui.choosesignalc2_combo
-        elif selected_graph == 2:
+        elif ui.real_time_combo.currentIndex() == 2:
             graph = graph3
             list = ui.C3_list
             combo = ui.choosesignalc3_combo
-        graph.plot_real_time(label="Real Time")
-        # print("Real Time" , graph.plots[0])
-        list.addItem("Real Time")
-        combo.addItem("Real Time")
-        # print("Real Time")
+        graph.plot_real_time()
+        list.addItem("Wind Speed")
+        combo.addItem("Wind Speed")
 
-    ui.real_time_btn.clicked.connect(lambda: add_real_time())
+        def update_points_from_api(wind_speed, time):
+            print(wind_speed, time)
+            graph.update_real_time(wind_speed)
 
-    # ui.real_time_btn.clicked.connect()
+        weather_fetcher.weather_data_fetched.connect(update_points_from_api)
+        weather_fetcher.start()
+        ui.weather_fetchers.append(weather_fetcher)
+
+    ui.real_time_btn.clicked.connect(fetch_weather_data)
+
+    # ui.real_time_btn.clicked.connect(lambda: add_real_time())
 
 
 def update_signal_list(ui: Ui_MainWindow, signals: list[Signal]):
@@ -439,23 +464,23 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
     ui.glue_btn.clicked.connect(glue)
 
 
-def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
-    def fetch_weather_data():
-        weather_fetcher = WeatherDataFetcher()
-        if ui.real_time_combo.currentIndex() == 0:
-            graph = graph1
-        elif ui.real_time_combo.currentIndex() == 1:
-            graph = graph2
-        elif ui.real_time_combo.currentIndex() == 2:
-            graph = graph3
-        graph.plot_real_time()
-
-        def update_points_from_api(wind_speed, time):
-            print(wind_speed, time)
-            graph.update_real_time(wind_speed)
-
-        weather_fetcher.weather_data_fetched.connect(update_points_from_api)
-        weather_fetcher.start()
-        ui.weather_fetchers.append(weather_fetcher)
-
-    ui.real_time_btn.clicked.connect(fetch_weather_data)
+# def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
+#     def fetch_weather_data():
+#         weather_fetcher = WeatherDataFetcher()
+#         if ui.real_time_combo.currentIndex() == 0:
+#             graph = graph1
+#         elif ui.real_time_combo.currentIndex() == 1:
+#             graph = graph2
+#         elif ui.real_time_combo.currentIndex() == 2:
+#             graph = graph3
+#         graph.plot_real_time()
+#
+#         def update_points_from_api(wind_speed, time):
+#             print(wind_speed, time)
+#             graph.update_real_time(wind_speed)
+#
+#         weather_fetcher.weather_data_fetched.connect(update_points_from_api)
+#         weather_fetcher.start()
+#         ui.weather_fetchers.append(weather_fetcher)
+#
+#     ui.real_time_btn.clicked.connect(fetch_weather_data)

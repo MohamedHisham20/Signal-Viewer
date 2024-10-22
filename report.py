@@ -152,6 +152,7 @@ class GraphWindow(QWidget):
                 # Clear the graph and plot the new data
                 self.graph_widget.clear()
                 self.plot = self.graph_widget.plot(self.data, pen='b')
+                self.graph.custom_viewbox.set_dynamic_limits(0, len(self.data), min(self.data), max(self.data))
 
                 # Reset cropped data list (since this is a new graph)
                 self.cropped_data = []

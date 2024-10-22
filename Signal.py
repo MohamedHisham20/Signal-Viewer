@@ -76,9 +76,10 @@ class Signal:
                 if len(header) == 1:
                     data_pnts = [(i, float(row[0])) for i, row in enumerate(reader)]
                 else:
-                    for row in reader:
-                        x, y = float(row[0]), float(row[1])
-                        data_pnts.append((x, y))
+                    data_pnts = [(i, float(row[1])) for i, row in enumerate(reader)]
+                    # for row in reader:
+                    #     x, y = float(row[0]), float(row[1])
+                    #     data_pnts.append((x, y))
 
         except Exception as e:
             return None
