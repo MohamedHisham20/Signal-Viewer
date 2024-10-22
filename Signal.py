@@ -76,9 +76,10 @@ class Signal:
                 if len(header) == 1:
                     data_pnts = [(i, float(row[0])) for i, row in enumerate(reader)]
                 else:
-                    for row in reader:
-                        x, y = float(row[0]), float(row[1])
-                        data_pnts.append((x, y))
+                    data_pnts = [(i, float(row[1])) for i, row in enumerate(reader)]
+                    # for row in reader:
+                    #     x, y = float(row[0]), float(row[1])
+                    #     data_pnts.append((x, y))
 
         except Exception as e:
             return None
@@ -98,6 +99,9 @@ class Signal:
 
     def get_y_values(self):
         return [pnt[1] for pnt in self.data_pnts]
+
+    def get_x_values(self):
+        return [pnt[0] for pnt in self.data_pnts]
 
     def append_point(self, x, y):
         self.data_pnts.append((x, y))
