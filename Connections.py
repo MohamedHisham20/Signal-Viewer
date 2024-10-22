@@ -33,7 +33,7 @@ def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
 
 
 def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Signal]):
-    ui.Channals.setFixedHeight(400)
+    ui.Channels.setFixedHeight(400)
     if ui.nonRect_widget.layout() is None:
         layout = QtWidgets.QHBoxLayout(ui.nonRect_widget)
         ui.nonRect_widget.setLayout(layout)
@@ -56,8 +56,8 @@ def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Si
     })
 
 
-def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Channal: int):
-    if Channal == 1:
+def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Channel: int):
+    if Channel == 1:
         ui.addsignalc1_combo.addItems([signal.label for signal in signals])
 
         def add_signal():
@@ -126,7 +126,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         # ui.dial_slide_c1.valueChanged.connect(change_pan)
         ui.dial_slide_c1.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c1.value() / 100.0))
 
-    elif Channal == 2:
+    elif Channel == 2:
         ui.addsignalc2_combo.addItems([signal.label for signal in signals])
 
         # ui.choosesignalc2_combo.addItems()
@@ -196,7 +196,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         # ui.dial_slide_c2.valueChanged.connect(change_pan)
         ui.dial_slide_c2.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c2.value() / 100.0))
 
-    elif Channal == 3:
+    elif Channel == 3:
         ui.addsignalc3_combo.addItems([signal.label for signal in signals])
 
         # ui.choosesignalc3_combo.addItems()
@@ -269,7 +269,7 @@ def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Ch
         ui.dial_slide_c3.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c3.value() / 100.0))
 
 
-def all_Channals_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
+def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
     def play_all():
         graph1.play_pause(play=True)
         graph2.play_pause(play=True)
@@ -312,7 +312,7 @@ def all_Channals_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
 def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
     def crop_signal():
         # print("Cropping")
-        # selected_Channal = ui.crop_combo.currentIndex()+1
+        # selected_Channel = ui.crop_combo.currentIndex()+1
         from_c1 = graph1.crop_signal()
         from_c2 = graph2.crop_signal()
         from_c3 = graph3.crop_signal()
@@ -323,7 +323,7 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
         def add_signal(graph: Graph, combo: QtWidgets.QComboBox, signal, list):
             signals.append(signal)
             if signal.label not in [combo.itemText(i) for i in range(combo.count())]:
-                shift = graph.get_last_point()
+                
                 plot = graph.plot_signal(signal)
 
                 if plot.signal.label not in [combo.itemText(i) for i in range(combo.count())]:
@@ -359,10 +359,10 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
             graph = graph3
             list = ui.C3_list
             combo = ui.choosesignalc3_combo
-        graph.plot_real_time(label="Real Time")
+        graph.plot_real_time(label="wind_speed")
         # print("Real Time" , graph.plots[0])
-        list.addItem("Real Time")
-        combo.addItem("Real Time")
+        list.addItem("wind_speed")
+        combo.addItem("wind_speed")
         # print("Real Time")
 
     ui.real_time_btn.clicked.connect(lambda: add_real_time())
@@ -390,42 +390,101 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
     def populate_combo_boxes(channel_index=0):
         ui.glue_signal1_combo.clear()
         ui.glue_singal2_combo.clear()
-        if channel_index == 0:
+        graph = None
+        if channel_index == 1:
             graph = graph1
-        elif channel_index == 1:
-            graph = graph2
         elif channel_index == 2:
+            graph = graph2
+        elif channel_index == 3:
             graph = graph3
-
+        if not graph:
+            return
         ui.glue_signal1_combo.addItems([plot.signal.label for plot in graph.plots])
         ui.glue_singal2_combo.addItems([plot.signal.label for plot in graph.plots])
         ui.glue_singal2_combo.setCurrentIndex(len(graph.plots) - 1)
-
+    def save():
+        graph:Graph = graph1
+        if ui.glue_combo_Channel.currentIndex() == 1:
+            graph = graph1
+        elif ui.glue_combo_Channel.currentIndex() == 2:
+            graph = graph2
+        elif ui.glue_combo_Channel.currentIndex() == 3:
+            graph = graph3
+        for plot in graph.plots:
+            if plot.dynamic_interpolation:
+                plot.plot1_interpolation = None
+                plot.plot2_interpolation = None
+                plot.dynamic_interpolation = False
     def on_tab_changed(index):
-        if ui.Channals.tabText(index) == "General":
-            ui.glue_combo_Channal.setCurrentIndex(0)
-            populate_combo_boxes()
+        populate_combo_boxes(ui.glue_combo_Channel.currentIndex())
+        if ui.glue_combo_Channel.currentIndex() == 0:
+            save()
 
     def glue():
-        glued_signal = glue_signals(graph1.plots[ui.glue_signal1_combo.currentIndex()].signal,
-                                    graph1.plots[ui.glue_singal2_combo.currentIndex()].signal)
-        channel_index = ui.glue_combo_Channal.currentIndex()
-        if channel_index == 0:
+        
+        graph:Graph = graph1
+        if ui.glue_combo_Channel.currentIndex() == 1:
             graph = graph1
-        elif channel_index == 1:
+        elif ui.glue_combo_Channel.currentIndex() == 2:
             graph = graph2
-        elif channel_index == 2:
+        elif ui.glue_combo_Channel.currentIndex() == 3:
             graph = graph3
+        if len(graph.plots) < 2:
+            return
+        plot1 = graph.plots[ui.glue_signal1_combo.currentIndex()]
+        plot2 = graph.plots[ui.glue_singal2_combo.currentIndex()]
+        glued_signal = glue_signals(plot1.signal,
+                                    plot2.signal)
+        channel_index = ui.glue_combo_Channel.currentIndex()
+        if channel_index == 1:
+            graph = graph1
+            combo = ui.choosesignalc1_combo
+            list = ui.C1_list
+        elif channel_index == 2:
+            graph = graph2
+            combo = ui.choosesignalc2_combo
+            list = ui.C2_list
+        elif channel_index == 3:
+            graph = graph3
+            combo = ui.choosesignalc3_combo
+            list = ui.C3_list
+        
+        maxX = max(plot1.signal.data_pnts[plot1.last_point][0], plot2.signal.data_pnts[plot2.last_point][0])
+        def find_last_index(glued_signal, maxX):
+            epsilon = 1e-9 
+            low, high = 0, len(glued_signal.data_pnts) - 1
+            while low < high:
+                mid = (low + high) // 2
+                if glued_signal.data_pnts[mid][0] < maxX - epsilon:
+                    low = mid + 1
+                else:
+                    high = mid
+            if low < len(glued_signal.data_pnts) and glued_signal.data_pnts[low][0] > maxX + epsilon:
+                low -= 1  
+            return low
+        last_index = find_last_index(glued_signal, maxX)
+        last_point = last_index / len(glued_signal.data_pnts)
+        print(last_point)
+        signals.append(glued_signal)
+        update_signal_list(ui, signals)
+        plot = graph.plot_signal(glued_signal,last_point)
+        graph.play_pause(plot, False)
+        plot.plot1_interpolation = plot1
+        plot.plot2_interpolation = plot2
+        plot.dynamic_interpolation = True
+        combo.addItem(plot.signal.label)
+        list.addItem(plot.signal.label)
+        
+            
 
-        graph.plot_signal(glued_signal)  # Draw entire signal, don't start drawing point by point
-        # add signal to list
+    ui.glue_combo_Channel.currentTextChanged.connect(on_tab_changed)
+    # ui.Channels.currentChanged.connect(on_tab_changed)
+    ui.glue_combo_Channel.clear()
+    ui.glue_combo_Channel.addItems(["No glue","Channel 1", "Channel 2", "Channel 3"])
+    # ui.glue_combo_Channel.currentIndexChanged.connect(
+    #     lambda: populate_combo_boxes(ui.glue_combo_Channel.currentIndex()))
+    ui.glue_combo_Channel.setCurrentIndex(0)
 
-    ui.Channals.currentChanged.connect(on_tab_changed)
-    ui.glue_combo_Channal.clear()
-    ui.glue_combo_Channal.addItems(["Channel 1", "Channel 2", "Channel 3"])
-    ui.glue_combo_Channal.currentIndexChanged.connect(
-        lambda: populate_combo_boxes(ui.glue_combo_Channal.currentIndex()))
-    ui.glue_combo_Channal.setCurrentIndex(0)
     ui.glue_btn.clicked.connect(glue)
 
 
@@ -438,7 +497,10 @@ def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Grap
             graph = graph2
         elif ui.real_time_combo.currentIndex() == 2:
             graph = graph3
-        graph.plot_real_time()
+        # graph.plot_real_time()
+        for plot in graph.plots:
+            if plot.isRealTime:
+                plot.signal.label = "wind_speed"
 
         def update_points_from_api(wind_speed, time):
             print(wind_speed, time)

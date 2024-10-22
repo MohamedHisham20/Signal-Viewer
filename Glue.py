@@ -36,7 +36,7 @@ def combine_overlap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame):
     overlap_start = max(signal1_df['x'].min(), signal2_df['x'].min())
     overlap_end = min(signal1_df['x'].max(), signal2_df['x'].max())
 
-    number_of_points = max(10, int((overlap_end - overlap_start) * 100))  # change this to dynamically reflect the overlap duration
+    number_of_points = max(10, int((overlap_end - overlap_start) * 1))  # change this to dynamically reflect the overlap duration
 
     interpolation_points = np.linspace(overlap_start, overlap_end, number_of_points)
 

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import QTimer, QElapsedTimer, Qt
 from Signal import Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout
+from Glue import glue_signals
 
 class CustomViewBox(pg.ViewBox):
     def __init__(self, *args, **kwargs):
@@ -94,6 +95,9 @@ class Plot:
         self.isRunning = True
         self.isRealTime = False
         self.last_point = int(len(signal.data_pnts) * 0.1)
+        self.dynamic_interpolation = False
+        self.plot1_interpolation = None
+        self.plot2_interpolation = None
 
 class Graph(QWidget):
     def __init__(self, ):
@@ -127,6 +131,7 @@ class Graph(QWidget):
                 plot.isRunning = play
         else:
             plot.isRunning = play
+
 
     def delete_signal(self,signal:Signal):
         # print("Signal not found")

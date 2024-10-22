@@ -4,7 +4,7 @@ from NonRectGraphController import NonRectGraph
 from Connections import (
     NonRect_connections,
     Graph_connections,
-    all_Channals_connections,
+    all_Channels_connections,
     add_lists,
     general_connections,
     report_connections,
@@ -20,7 +20,7 @@ MainWindow = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
 
-ui.Channals.setFixedHeight(400)
+ui.Channels.setFixedHeight(400)
 signals = Signal.get_all_signals(True)
 
 graph_C1 = Graph()
@@ -31,7 +31,7 @@ add_lists(ui, graph_C1, graph_C2, graph_C3,signals)
 Graph_connections(graph_C1, ui, signals,1)
 Graph_connections(graph_C2, ui, signals,2)
 Graph_connections(graph_C3, ui, signals,3)
-all_Channals_connections(graph1=graph_C1,graph2=graph_C2,graph3=graph_C3,ui=ui,signals=signals)
+all_Channels_connections(graph1=graph_C1,graph2=graph_C2,graph3=graph_C3,ui=ui,signals=signals)
 NonRect_connections(NonRectGraph(ui.nonRect_widget), ui, signals)
 general_connections( ui,graph_C1,graph_C2,graph_C3,signals)
 report_connections(ui,signals)
