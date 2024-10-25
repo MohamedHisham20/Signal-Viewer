@@ -382,6 +382,8 @@ def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3:
             graph = graph3
             list = ui.C3_list
             combo = ui.choosesignalc3_combo
+        minX , maxX,minY,maxY =graph.Calculate_min_max()
+
         graph.plot_real_time()
         list.addItem("Wind Speed")
         combo.addItem("Wind Speed")
