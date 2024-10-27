@@ -48,7 +48,7 @@ class WeatherDataFetcher(QThread):
             else:
                 print("Failed to retrieve weather data:", weather_data.get("message", "Unknown error"))
 
-            time.sleep(1)  # every n seconds
+            time.sleep(3)  # every n seconds
 
     def stop(self):
         self.terminate()

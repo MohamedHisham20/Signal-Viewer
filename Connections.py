@@ -1,293 +1,246 @@
 import pyqtgraph as pg
 import copy
-
+from PySide6 import QtCore
 from MainWindow import DragDropList, Ui_MainWindow
 from NonRectGraphController import NonRectGraph
 from PySide6 import QtWidgets
 from Signal import Signal
 from Graph import Graph
 from report import open_report_window
-from Glue import glue_signals
+from Glue import GluePopUp, glue_signals
 from WeatherDataFetcher import WeatherDataFetcher
 
 
-def add_lists(ui, graph_C1, graph_C2, graph_C3, signals):
+def add_lists(ui, graph_Channel1, graph_Channel2, graph_C3, signals):
     horizontalLayout = QtWidgets.QHBoxLayout()
     ui.horizontalLayout.setObjectName("horizontalLayout")
-    ui.C1_list = DragDropList()
-    ui.C1_list.setupParameters(ui, graph_C1, graph_C2, graph_C3, signals)
-    ui.C1_list.setObjectName("C1_list")
-    ui.horizontalLayout.addWidget(ui.C1_list)
-    ui.C2_list = DragDropList()
-    ui.C2_list.setupParameters(ui, graph_C1, graph_C2, graph_C3, signals)
-    ui.C2_list.setObjectName("C2_list")
-    ui.horizontalLayout.addWidget(ui.C2_list)
+    ui.Channel1_list = DragDropList()
+    ui.Channel1_list.setMaximumSize(QtCore.QSize(1000, 70))
+    ui.Channel1_list.setupParameters(ui, graph_Channel1, graph_Channel2, graph_C3, signals)
+    ui.Channel1_list.setObjectName("Channel1_list")
+    ui.horizontalLayout.addWidget(ui.Channel1_list)
+    ui.Channel2_list = DragDropList()
+    ui.Channel2_list.setMaximumSize(QtCore.QSize(1000, 70))
+    ui.Channel2_list.setupParameters(ui, graph_Channel1, graph_Channel2, graph_C3, signals)
+    ui.Channel2_list.setObjectName("Channel2_list")
+    ui.horizontalLayout.addWidget(ui.Channel2_list)
     ui.C3_list = DragDropList()
-    ui.C3_list.setupParameters(ui, graph_C1, graph_C2, graph_C3, signals)
+    ui.C3_list.setupParameters(ui, graph_Channel1, graph_Channel2, graph_C3, signals)
     ui.C3_list.setObjectName("C3_list")
-    ui.horizontalLayout.addWidget(ui.C3_list)
+    # ui.horizontalLayout.addWidget(ui.C3_list)
     ui.verticalLayout_13.addLayout(ui.horizontalLayout)
     ui.verticalLayout_4.addLayout(ui.verticalLayout_13)
-    ui.C1_widget.layout().addWidget(graph_C1.plot_widget)
-    ui.C2_widget.layout().addWidget(graph_C2.plot_widget)
-    ui.C3_widget.layout().addWidget(graph_C3.plot_widget)
+    ui.Channel1_widget.layout().addWidget(graph_Channel1.plot_widget)
+    ui.Channel2_widget.layout().addWidget(graph_Channel2.plot_widget)
+    #add line 
+    ui.line = QtWidgets.QFrame()
+    ui.line.setFrameShape(QtWidgets.QFrame.HLine)
+    ui.line.setFrameShadow(QtWidgets.QFrame.Sunken)
+    #add lable 
+    ui.operations_label = QtWidgets.QLabel()
+    ui.operations_label.setObjectName("label")
+    ui.operations_label.setText("Operations")
+    ui.verticalLayout_4.addWidget(ui.operations_label)
+    ui.verticalLayout_4.addWidget(ui.line)
+    ui.verticalLayout_4.addLayout(ui.glue_report_layout)
+    # ui.C3_widget.layout().addWidget(graph_C3.plot_widget)
 
 
 def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Signal]):
-    ui.Channels.setFixedHeight(400)
+    ui.Channels.setFixedHeight(390)
+    ui.nonRect_widget.setFixedHeight(370)
     if ui.nonRect_widget.layout() is None:
-        layout = QtWidgets.QHBoxLayout(ui.nonRect_widget)
+        layout = QtWidgets.QVBoxLayout(ui.nonRect_widget)
         ui.nonRect_widget.setLayout(layout)
     graph.pause_radar()
     ui.nonRect_widget.layout().addWidget(graph)
-    ui.stop_c4.clicked.connect(lambda: graph.pause_radar())
-    ui.play_c4.clicked.connect(lambda: graph.play_radar())
-    ui.replay_c4.clicked.connect(lambda: graph.rewind_radar())
-    ui.dial_slide_c4.valueChanged.connect(lambda: graph.scroll_radar(ui.dial_slide_c4.value()))
-    ui.dial_slide_c4.sliderPressed.connect(lambda: graph.pause_radar())
 
-    ui.dial_slide_c4.setRange(0, 360)
-    ui.dial_speed_c4.valueChanged.connect(lambda: graph.change_speed(ui.dial_speed_c4.value()))
-    ui.dial_speed_c4.setRange(1, 20)
-    ui.addsignalc4_combo.addItems([signal.label for signal in signals])
-    ui.addsignal_c4.clicked.connect(lambda: {
-        graph.clear(),
-        graph.signal_to_nonRect(signals[ui.addsignalc4_combo.currentIndex()]),
-        graph.play_radar()
-    })
+    # Create play/pause button
+    play_pause_button = QtWidgets.QPushButton("Play")
+    # ui.nonRect_widget.layout().addWidget(play_pause_button)
+    def toggle_play_pause():
+        if graph.isRunning:
+            graph.pause_radar()
+            play_pause_button.setText("Play")
+        else:
+            graph.play_radar()
+            play_pause_button.setText("Pause")
+
+    play_pause_button.clicked.connect(toggle_play_pause)
+
+    plot_siganl = QtWidgets.QPushButton("Plot")
+    siganls_combo = QtWidgets.QComboBox()
+    rewind_button = QtWidgets.QPushButton("Rewind")
+    plot_signal_layout = QtWidgets.QHBoxLayout()
+    plot_signal_layout.addWidget(play_pause_button)
+    plot_signal_layout.addWidget(rewind_button)
+    plot_signal_layout.addWidget(plot_siganl)
+    plot_signal_layout.addWidget(siganls_combo)
+    ui.nonRect_widget.layout().addLayout(plot_signal_layout)
+
+    siganls_combo.addItems([signal.label for signal in signals])
+
+    def plot_signal():
+        signal = copy.deepcopy(signals[siganls_combo.currentIndex() -1])
+        graph.signal_to_nonRect(signal)
+        toggle_play_pause()
+
+    plot_siganl.clicked.connect(plot_signal)
+
+    def rewind():
+        graph.rewind_radar()
+        play_pause_button.setText("Pause")
+
+    rewind_button.clicked.connect(rewind)
+
+
+    speed_label = QtWidgets.QLabel("Speed:")
+    speed_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    speed_slider.setRange(1, 10)
+    speed_slider.setValue(3)
+    
+    speed_layout = QtWidgets.QHBoxLayout()
+    speed_layout.addWidget(speed_label)
+    speed_layout.addWidget(speed_slider)
+    
+    ui.nonRect_widget.layout().addLayout(speed_layout)
+
+    speed_slider.valueChanged.connect(lambda: graph.change_speed(speed_slider.value()))
+
+    pan_label = QtWidgets.QLabel("Pan:")
+    pan_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+    pan_slider.setRange(0, 360)
+    pan_slider.setValue(50)
+    pan_layout = QtWidgets.QHBoxLayout()
+    pan_layout.addWidget(pan_label)
+    pan_layout.addWidget(pan_slider)    
+    ui.nonRect_widget.layout().addLayout(pan_layout)
+    def stop_radar_on_pan():
+        graph.pause_radar()
+        play_pause_button.setText("Play")
+        graph.scroll_radar(pan_slider.value())
+
+    pan_slider.valueChanged.connect(stop_radar_on_pan)
+
 
 
 def Graph_connections(graph: Graph, ui: Ui_MainWindow, signals: list[Signal], Channel: int):
     if Channel == 1:
-        ui.addsignalc1_combo.addItems([signal.label for signal in signals])
+        ui.addsignalChannel1_combo.addItems([signal.label for signal in signals])
 
         def add_signal():
-            # update_signal_list(ui,signals)
-            # signal = signals[ui.addsignalc1_combo.currentIndex()]
-            signal = copy.deepcopy(signals[ui.addsignalc1_combo.currentIndex()])
-            # check what is the last point of any ploted signal
+            if ui.addsignalChannel1_combo.currentIndex() == 0:
+                return
+            # signal = signals[ui.addsignalc3_combo.currentIndex()]
+            signal = copy.deepcopy(signals[ui.addsignalChannel1_combo.currentIndex() -1])
 
+            # Check if the signal already exists in the combo box
             last_point = graph.get_last_point()
-            if signal.label not in [ui.choosesignalc1_combo.itemText(i) for i in
-                                    range(ui.choosesignalc1_combo.count())]:
-                plot = graph.plot_signal(signal, shift=last_point)
+            plot_labels = [plot.signal.label for plot in graph.plots]
+            if signal.label not in plot_labels:
 
-                if plot.signal.label not in [ui.choosesignalc1_combo.itemText(i) for i in
-                                             range(ui.choosesignalc1_combo.count())]:
-                    ui.choosesignalc1_combo.addItem(plot.signal.label)
-                ui.C1_list.addItem(plot.signal.label)
+                plot = graph.plot_signal(signal, shift=graph.plot_to_track.signal.data_pnts[last_point][0] if graph.plot_to_track is not None else 0)
+                ui.playChannel1.setText("Pause")
+
+                ui.Channel1_list.addItem(plot.signal.label)
             else:
                 print("Signal already exists in the combo box")
 
-        ui.addsignal_c1.clicked.connect(add_signal)
+        ui.addsignal_Channel1.clicked.connect(add_signal)
 
         def play():
-            if ui.checkBox_c1.isChecked():
-                label = ui.choosesignalc1_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, True)
-            else:
-                graph.play_pause(play=True)
+            graph.play_pause()
+            if graph.plot_to_track is not None:
+                ui.playChannel1.setText("Pause" if graph.plot_to_track.isRunning else "Play")
 
-        def stop():
-            if ui.checkBox_c1.isChecked():
-                label = ui.choosesignalc1_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, False)
-            else:
-                graph.play_pause(play=False)
 
-        ui.playc1.clicked.connect(play)
-        ui.stopc1.clicked.connect(stop)
-        ui.dial_speed_c1.setRange(10, 100)
-        ui.dial_speed_c1.setValue(10)
-        ui.dial_speed_c1.valueChanged.connect(lambda: graph.change_speed(100 - ui.dial_speed_c1.value()))
+        ui.playChannel1.clicked.connect(play)
+        ui.dial_speed_Channel1.setRange(1, 10)
+        ui.dial_speed_Channel1.setValue(10)
+        graph.change_speed(10)
+        ui.dial_speed_Channel1.valueChanged.connect(lambda: graph.change_speed(ui.dial_speed_Channel1.value()))
 
-        # ui.addsignal_c1.clicked.connect(lambda: graph.plot_signal(signals[ui.addsignalc1_combo.currentIndex()]))
+        # ui.addsignal_Channel1.clicked.connect(lambda: graph.plot_signal(signals[ui.addsignalChannel1_combo.currentIndex() -1]))
         def rewind():
-            if ui.checkBox_c1.isChecked():
-                label = ui.choosesignalc1_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.rewind(plot)
-            else:
-                graph.rewind()
+            graph.rewind()
+            ui.playChannel1.setText("Pause")
 
-        ui.replayc1.clicked.connect(rewind)
-        ui.dial_slide_c1.setRange(0, 100)
-
-        def change_pan():
-
-            label = ui.choosesignalc1_combo.currentText()
-            plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            if plot is not None:
-                graph.change_pan_window(plot, ui.dial_slide_c1.value() / 100)
-
-        ui.choosesignalc1_combo.currentIndexChanged.connect(change_pan)
-        # ui.dial_slide_c1.setValue(0)
-        # ui.dial_slide_c1.valueChanged.connect(change_pan)
-        ui.dial_slide_c1.valueChanged.connect(lambda: {
-            graph.sihftX(ui.dial_slide_c1.value() / 100.0),
-            graph.udate_interpolation()
-        })
+        ui.replayChannel1.clicked.connect(rewind)
+        ui.dial_slide_Channel1.setRange(0, 100)
+        ui.dial_slide_Channel1.setValue(100)
+        graph.x_zoom(1)
+        ui.dial_slide_Channel1.valueChanged.connect(lambda: graph.x_zoom(ui.dial_slide_Channel1.value() / 100.0))
 
     elif Channel == 2:
-        ui.addsignalc2_combo.addItems([signal.label for signal in signals])
+        ui.addsignalChannel2_combo.addItems([signal.label for signal in signals])
 
-        # ui.choosesignalc2_combo.addItems()
-        # ui.C2_list.addItems([signal.label for signal in signals])
-
-        # ui.C2_widget.layout().addWidget(graph.plot_widget)
         def add_signal():
-            # signal = signals[ui.addsignalc2_combo.currentIndex()]
-            signal = copy.deepcopy(signals[ui.addsignalc2_combo.currentIndex()])
-            # Check if the signal already exists in the combo box
+            if ui.addsignalChannel2_combo.currentIndex() == 0:
+                return
+            signal = copy.deepcopy(signals[ui.addsignalChannel2_combo.currentIndex() -1])
             last_point = graph.get_last_point()
-            if signal.label not in [ui.choosesignalc2_combo.itemText(i) for i in
-                                    range(ui.choosesignalc2_combo.count())]:
-                plot = graph.plot_signal(signal, shift=last_point)
-                if plot.signal.label not in [ui.choosesignalc2_combo.itemText(i) for i in
-                                             range(ui.choosesignalc2_combo.count())]:
-                    ui.choosesignalc2_combo.addItem(plot.signal.label)
-                ui.C2_list.addItem(plot.signal.label)
+            plot_labels = [plot.signal.label for plot in graph.plots]
+            if signal.label not in plot_labels:
+
+                plot = graph.plot_signal(signal, shift=graph.plot_to_track.signal.data_pnts[last_point][0] if graph.plot_to_track is not None else 0)
+                ui.playChannel2.setText("Pause")
+                ui.Channel2_list.addItem(plot.signal.label)
             else:
                 print("Signal already exists in the combo box")
 
-        ui.addsignalc2_btn.clicked.connect(add_signal)
+        ui.addsignalChannel2_btn.clicked.connect(add_signal)
 
         def play():
-            if ui.checkBox_c2.isChecked():
-                label = ui.choosesignalc2_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, True)
-            else:
-                graph.play_pause(play=True)
+            graph.play_pause()
+            if graph.plot_to_track is not None:
+                ui.playChannel2.setText("Pause" if graph.plot_to_track.isRunning else "Play")
 
-        def stop():
-            if ui.checkBox_c2.isChecked():
-                label = ui.choosesignalc2_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, False)
-            else:
-                graph.play_pause(play=False)
 
-        ui.playc2.clicked.connect(play)
-        ui.stopc2.clicked.connect(stop)
-        ui.dial_speed_c2.setRange(10, 100)
-        ui.dial_speed_c2.setValue(10)
-        ui.dial_speed_c2.valueChanged.connect(lambda: graph.change_speed(100 - ui.dial_speed_c2.value()))
 
-        # ui.addsignal_c2.clicked.connect(lambda: graph.plot_signal(signals[ui.addsignalc2_combo.currentIndex()]))
+        ui.playChannel2.clicked.connect(play)
+        ui.dial_speed_Channel2.setRange(1, 10)
+        ui.dial_speed_Channel2.setValue(10)
+        graph.change_speed(10)
+        ui.dial_speed_Channel2.valueChanged.connect(lambda: graph.change_speed(ui.dial_speed_Channel2.value()))
+
+        # ui.addsignal_Channel2.clicked.connect(lambda: graph.plot_signal(signals[ui.addsignalChannel2_combo.currentIndex() -1]))
         def rewind():
-            if ui.checkBox_c2.isChecked():
-                label = ui.choosesignalc2_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.rewind(plot)
-            else:
-                graph.rewind()
+            graph.rewind()
+            ui.playChannel2.setText("Pause")
 
-        ui.replayc2.clicked.connect(rewind)
-        ui.dial_slide_c2.setRange(0, 100)
+        ui.replayChannel2.clicked.connect(rewind)
+        ui.dial_slide_Channel2.setRange(0, 100)
+        ui.dial_slide_Channel2.setValue(100)
+        graph.x_zoom(1)
+        ui.dial_slide_Channel2.valueChanged.connect(lambda: graph.x_zoom(ui.dial_slide_Channel2.value() / 100.0))
 
-        def change_pan():
-
-            label = ui.choosesignalc2_combo.currentText()
-            plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            if plot is not None:
-                graph.change_pan_window(plot, ui.dial_slide_c2.value() / 100)
-
-        ui.choosesignalc2_combo.currentIndexChanged.connect(change_pan)
-        ui.dial_slide_c2.setValue(0)
-        # ui.dial_slide_c2.valueChanged.connect(change_pan)
-        ui.dial_slide_c2.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c2.value() / 100.0))
-
-    elif Channel == 3:
-        ui.addsignalc3_combo.addItems([signal.label for signal in signals])
-
-        # ui.choosesignalc3_combo.addItems()
-        # ui.C3_list.addItems([signal.label for signal in signals])
-
-        # ui.C3_widget.layout().addWidget(graph.plot_widget)
-        def add_signal():
-            # signal = signals[ui.addsignalc3_combo.currentIndex()]
-            signal = copy.deepcopy(signals[ui.addsignalc3_combo.currentIndex()])
-
-            # Check if the signal already exists in the combo box
-            last_point = graph.get_last_point()
-            if signal.label not in [ui.choosesignalc3_combo.itemText(i) for i in
-                                    range(ui.choosesignalc3_combo.count())]:
-
-                plot = graph.plot_signal(signal, shift=last_point)
-                if plot.signal.label not in [ui.choosesignalc3_combo.itemText(i) for i in
-                                             range(ui.choosesignalc3_combo.count())]:
-                    ui.choosesignalc3_combo.addItem(plot.signal.label)
-                ui.C3_list.addItem(plot.signal.label)
-            else:
-                print("Signal already exists in the combo box")
-
-        ui.addsignal_c3.clicked.connect(add_signal)
-
-        def play():
-            if ui.checkBox_c3.isChecked():
-                label = ui.choosesignalc3_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, True)
-            else:
-                graph.play_pause(play=True)
-
-        def stop():
-            if ui.checkBox_c3.isChecked():
-                label = ui.choosesignalc3_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.play_pause(plot, False)
-            else:
-                graph.play_pause(play=False)
-
-        ui.play_c3.clicked.connect(play)
-        ui.stop_c3.clicked.connect(stop)
-        ui.dial_speed_c3.setRange(10, 100)
-        ui.dial_speed_c3.setValue(10)
-        ui.dial_speed_c3.valueChanged.connect(lambda: graph.change_speed(100 - ui.dial_speed_c3.value()))
-
-        # ui.addsignal_c3.clicked.connect(lambda: graph.plot_signal(signals[ui.addsignalc3_combo.currentIndex()]))
-        def rewind():
-            if ui.checkBox_c3.isChecked():
-                label = ui.choosesignalc3_combo.currentText()
-                plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-                graph.rewind(plot)
-            else:
-                graph.rewind()
-
-        ui.replay_c3.clicked.connect(rewind)
-        ui.dial_slide_c3.setRange(0, 100)
-
-        def change_pan():
-
-            label = ui.choosesignalc3_combo.currentText()
-            plot = next((plot for plot in graph.plots if plot.signal.label == label), None)
-            if plot is not None:
-                graph.change_pan_window(plot, ui.dial_slide_c3.value() / 100)
-
-        ui.choosesignalc3_combo.currentIndexChanged.connect(change_pan)
-        ui.dial_slide_c3.setValue(0)
-        # ui.dial_slide_c3.valueChanged.connect(change_pan)
-        ui.dial_slide_c3.valueChanged.connect(lambda: graph.sihftX(ui.dial_slide_c3.value() / 100.0))
 
 
 def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui_MainWindow, signals: list[Signal]):
     def play_all():
-        graph1.play_pause(play=True)
-        graph2.play_pause(play=True)
-        graph3.play_pause(play=True)
+        if ui.play_all_btn.text() == "Pause":
+            if graph1.plot_to_track is not None:
+                if graph1.plot_to_track.isRunning:
+                    graph1.play_pause()
+            if graph2.plot_to_track is not None:
+                if graph2.plot_to_track.isRunning:
+                    graph2.play_pause()
+            ui.play_all_btn.setText("Play")
+        else:
+            if graph1.plot_to_track is not None:
+                if not graph1.plot_to_track.isRunning:
+                    graph1.play_pause()
+            if graph2.plot_to_track is not None:
+                if not graph2.plot_to_track.isRunning:
+                    graph2.play_pause()
+            ui.play_all_btn.setText("Pause")
 
-    def stop_all():
-        graph1.play_pause(play=False)
-        graph2.play_pause(play=False)
-        graph3.play_pause(play=False)
 
     def rewind_all():
         graph1.rewind()
         graph2.rewind()
         graph3.rewind()
+        ui.play_all_btn.setText("Pause")
 
     def change_speed_all(speed):
         graph1.change_speed(speed)
@@ -296,125 +249,177 @@ def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
 
     def change_pan_all(value):
         if graph1.plot_to_track is not None:
-            graph1.change_pan_window(graph1.plot_to_track, value / 100)
+            graph1.x_zoom(value / 100)
         if graph2.plot_to_track is not None:
-            graph2.change_pan_window(graph2.plot_to_track, value / 100)
+            graph2.x_zoom(value / 100)
         if graph3.plot_to_track is not None:
-            graph3.change_pan_window(graph3.plot_to_track, value / 100)
+            graph3.x_zoom(value / 100)
 
+    def play_init():
+        ui.play_all_btn.setText("Pause")
+        all_running = False
+        all_paused = True
+        if graph1.plot_to_track is not None:
+            ui.playChannel1.setText("Pause" if graph1.plot_to_track.isRunning else "Play")
+            all_running = all_running or graph1.plot_to_track.isRunning
+            all_paused = all_paused and not graph1.plot_to_track.isRunning
+        if graph2.plot_to_track is not None:
+            ui.playChannel2.setText("Pause" if graph2.plot_to_track.isRunning else "Play")
+            all_running = all_running or graph2.plot_to_track.isRunning
+            all_paused = all_paused and not graph2.plot_to_track.isRunning
+
+        if not all_running:
+            ui.play_all_btn.setText("Play")
+        if not all_paused:
+            ui.play_all_btn.setText("Pause")
+
+        if ui.Channels.currentIndex() != 2:
+            graph1.linked = False
+            graph2.linked = False
+            return
+        graph1.linked = True
+        graph2.linked = True
+        def link_view(source_viewbox, target_viewbox):
+            if not graph1.custom_viewbox.is_user_panning and not graph2.custom_viewbox.is_user_panning:
+                return
+            if graph1.custom_viewbox.is_user_panning:
+                graph2.custom_viewbox.is_user_panning = True
+                graph2.custom_viewbox.elapsed_timer.start()
+            else:
+                graph2.custom_viewbox.is_user_panning = False
+                
+            if graph2.custom_viewbox.is_user_panning:
+                graph1.custom_viewbox.is_user_panning = True
+                graph1.custom_viewbox.elapsed_timer.start()
+            else:
+                graph1.custom_viewbox.is_user_panning = False
+
+            if not graph1.linked:
+                return
+            if not graph2.linked:
+                return
+            
+            # target_viewbox.setLimits(
+            #     yMin=min(source_viewbox.viewRange()[1][0], target_viewbox.viewRange()[1][0]),
+            #     yMax=max(source_viewbox.viewRange()[1][1], target_viewbox.viewRange()[1][1])
+            # )
+            target_viewbox.setXRange(*source_viewbox.viewRange()[0], padding=0)
+            target_viewbox.setYRange(*source_viewbox.viewRange()[1], padding=0)
+
+        graph1.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox()))
+        graph2.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox()))
+        graph1.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox()))
+        graph2.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox()))
+
+    def import_csv():
+        signal = Signal.from_file_dialog(True)
+        if signal:
+            #if there is signal with the same label, remove it
+            for i in range(len(signals)):
+                if signals[i].label == signal.label:
+                    signals.pop(i)
+                    break
+                
+            signals.append(signal)
+            update_signal_list(ui, signals)
+
+    ui.import_Channel1_btn.clicked.connect(import_csv)
+    ui.import_Channel2_btn.clicked.connect(import_csv)
     ui.play_all_btn.clicked.connect(play_all)
-    ui.stop_all_btn.clicked.connect(stop_all)
+    ui.Channels.currentChanged.connect(play_init)
+    # ui.stop_all_btn.clicked.connect(stop_all)
     ui.replay_all_btn.clicked.connect(rewind_all)
-    ui.dial_speed_btn.setRange(10, 100)
-    ui.dial_speed_btn.setValue(50)
-    ui.dial_speed_btn.valueChanged.connect(lambda: change_speed_all(140 - ui.dial_speed_btn.value()))
+    ui.dial_speed_btn.setRange(1, 10)
+    ui.dial_speed_btn.setValue(10)
+    change_pan_all(100)
+    ui.dial_speed_btn.valueChanged.connect(lambda: change_speed_all(ui.dial_speed_btn.value()))
     ui.dial_slide_btn.setRange(0, 100)
-    ui.dial_slide_btn.setValue(0)
-    ui.dial_slide_btn.valueChanged.connect(change_pan_all)
+    ui.dial_slide_btn.setValue(100)
+    change_speed_all(10)
+    ui.dial_slide_btn.valueChanged.connect(lambda: change_pan_all(ui.dial_slide_btn.value()))
+    def init_glue_popup():
+        glue_popup = GluePopUp(signals=signals,ui=ui)
+        glue_popup.set_signals(copy.deepcopy(signals[0]), copy.deepcopy(signals[1]))
+        glue_popup.combo_signal1.setCurrentIndex(0)
+        glue_popup.combo_signal2.setCurrentIndex(1)
+        glue_popup.show()
+
+    ui.all_glue_btn.clicked.connect(lambda: init_glue_popup())
 
 
 def general_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
     def crop_signal():
-        # print("Cropping")
-        # selected_Channel = ui.crop_combo.currentIndex()+1
-        from_c1 = graph1.crop_signal()
-        from_c2 = graph2.crop_signal()
-        from_c3 = graph3.crop_signal()
 
-        # print(from_c1)
-        # print(from_c2)
-        # print(from_c3)
+        from_Channel1 = graph1.crop_signal()
+        from_Channel2 = graph2.crop_signal()
+        from_c3 = graph3.crop_signal()
         def add_signal(graph: Graph, combo: QtWidgets.QComboBox, signal, list):
             signals.append(signal)
-            if signal.label not in [combo.itemText(i) for i in range(combo.count())]:
+            plot_labels = [plot.signal.label for plot in graph.plots]
+            if signal.label not in plot_labels:
 
                 plot = graph.plot_signal(signal)
-
-                if plot.signal.label not in [combo.itemText(i) for i in range(combo.count())]:
-                    combo.addItem(plot.signal.label)
+                
                 list.addItem(plot.signal.label)
                 update_signal_list(ui, signals)
             else:
                 print("Signal already exists in the combo box")
 
-        if from_c1 is not None:
-            add_signal(graph1, ui.addsignalc1_combo, from_c1, ui.C1_list)
-        if from_c2 is not None:
-            add_signal(graph2, ui.addsignalc2_combo, from_c2, ui.C2_list)
-        if from_c3 is not None:
-            add_signal(graph3, ui.addsignalc3_combo, from_c3, ui.C3_list)
+        if from_Channel1 is not None:
+            add_signal(graph1, ui.addsignalChannel1_combo, from_Channel1, ui.Channel1_list)
+            ui.playChannel1.setText("Pause")
+        if from_Channel2 is not None:
+            add_signal(graph2, ui.addsignalChannel2_combo, from_Channel2, ui.Channel2_list)
+            ui.playChannel2.setText("Pause")
+
 
     graph1.custom_viewbox.crop = crop_signal
     graph2.custom_viewbox.crop = crop_signal
-    graph3.custom_viewbox.crop = crop_signal
 
-    # def add_real_time():
-    #     selected_graph = ui.real_time_combo.currentIndex()
-    #     # print(selected_graph)
-    #     if selected_graph == 0:
-    #         graph = graph1
-    #         list = ui.C1_list
-    #         combo = ui.choosesignalc1_combo
-    #     elif selected_graph == 1:
-    #         graph = graph2
-    #         list = ui.C2_list
-    #         combo = ui.choosesignalc2_combo
-    #     elif selected_graph == 2:
-    #         graph = graph3
-    #         list = ui.C3_list
-    #         combo = ui.choosesignalc3_combo
-    #     graph.plot_real_time(label="Real Time")
-    #     # print("Real Time" , graph.plots[0])
-    #     list.addItem("Real Time")
-    #     combo.addItem("Real Time")
 
-    def fetch_weather_data():
+    def fetch_weather_data(graph,list):
         weather_fetcher = WeatherDataFetcher()
-        if ui.real_time_combo.currentIndex() == 0:
-            graph = graph1
-            list = ui.C1_list
-            combo = ui.choosesignalc1_combo
-        elif ui.real_time_combo.currentIndex() == 1:
-            graph = graph2
-            list = ui.C2_list
-            combo = ui.choosesignalc2_combo
-        elif ui.real_time_combo.currentIndex() == 2:
-            graph = graph3
-            list = ui.C3_list
-            combo = ui.choosesignalc3_combo
-        minX , maxX,minY,maxY =graph.Calculate_min_max()
-
-        graph.plot_real_time()
+        shift = graph.get_last_point()
+        graph.plot_real_time(shift = graph.plot_to_track.signal.data_pnts[shift][0] if graph.plot_to_track is not None else 0)
         list.addItem("Wind Speed")
-        combo.addItem("Wind Speed")
 
         def update_points_from_api(wind_speed, time):
-            print(wind_speed, time)
-            graph.update_real_time(wind_speed)
+            print("wind speed is ",wind_speed, time)
+            # if graph1 have real time plot
+            for plot in graph1.plots:
+                if plot.isRealTime:
+                    graph1.update_real_time(wind_speed)
+                    break
+            # if graph2 have real time plot
+            for plot in graph2.plots:
+                if plot.isRealTime:
+                    graph2.update_real_time(wind_speed)
+                    break
+
 
         weather_fetcher.weather_data_fetched.connect(update_points_from_api)
         weather_fetcher.start()
         ui.weather_fetchers.append(weather_fetcher)
 
-    ui.real_time_btn.clicked.connect(fetch_weather_data)
-
-    # ui.real_time_btn.clicked.connect(lambda: add_real_time())
-
+    ui.plot_real_time_Channel1.clicked.connect(lambda: fetch_weather_data(graph1,ui.Channel1_list))
+    ui.plot_real_time_Channel2.clicked.connect(lambda: fetch_weather_data(graph2,ui.Channel2_list))
 
 def update_signal_list(ui: Ui_MainWindow, signals: list[Signal]):
-    ui.addsignalc1_combo.clear()
-    ui.addsignalc2_combo.clear()
-    ui.addsignalc3_combo.clear()
-    ui.addsignalc4_combo.clear()
+    ui.addsignalChannel1_combo.clear()
+    ui.addsignalChannel2_combo.clear()
+    # ui.addsignalc3_combo.clear()
+    # ui.addsignalc4_combo.clear()
 
-    ui.addsignalc1_combo.addItems([signal.label for signal in signals])
-    ui.addsignalc2_combo.addItems([signal.label for signal in signals])
-    ui.addsignalc3_combo.addItems([signal.label for signal in signals])
-    ui.addsignalc4_combo.addItems([signal.label for signal in signals])
+    ui.addsignalChannel1_combo.addItem("Choose signal")
+    ui.addsignalChannel2_combo.addItem("Choose signal")
+    ui.addsignalChannel1_combo.addItems([signal.label for signal in signals])
+    ui.addsignalChannel2_combo.addItems([signal.label for signal in signals])
+    # ui.addsignalc3_combo.addItems([signal.label for signal in signals])
+    # ui.addsignalc4_combo.addItems([signal.label for signal in signals])
 
 
 def report_connections(ui: Ui_MainWindow, signals: list[Signal]):
-    ui.report_btn.clicked.connect(open_report_window)
+    ui.all_report_btn.clicked.connect(lambda: open_report_window(signals))
 
 
 def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
@@ -469,15 +474,12 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
         channel_index = ui.glue_combo_Channel.currentIndex()
         if channel_index == 1:
             graph = graph1
-            combo = ui.choosesignalc1_combo
-            list = ui.C1_list
+            list = ui.Channel1_list
         elif channel_index == 2:
             graph = graph2
-            combo = ui.choosesignalc2_combo
-            list = ui.C2_list
+            list = ui.Channel2_list
         elif channel_index == 3:
             graph = graph3
-            combo = ui.choosesignalc3_combo
             list = ui.C3_list
 
         maxX = max(plot1.signal.data_pnts[plot1.last_point][0], plot2.signal.data_pnts[plot2.last_point][0])
@@ -503,7 +505,7 @@ def glue_connections(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Gr
         plot.plot1_interpolation = plot1
         plot.plot2_interpolation = plot2
         plot.dynamic_interpolation = True
-        combo.addItem(plot.signal.label)
+        # combo.addItem(plot.signal.label)
         list.addItem(plot.signal.label)
 
 
@@ -534,7 +536,7 @@ def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Grap
                 plot.signal.label = "wind_speed"
 
         def update_points_from_api(wind_speed, time):
-            print(wind_speed, time)
+            # print(wind_speed, time)
             graph.update_real_time(wind_speed)
 
         weather_fetcher.weather_data_fetched.connect(update_points_from_api)
@@ -542,23 +544,3 @@ def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Grap
         ui.weather_fetchers.append(weather_fetcher)
 
     ui.real_time_btn.clicked.connect(fetch_weather_data)
-# def api_connection(ui: Ui_MainWindow, graph1: Graph, graph2: Graph, graph3: Graph, signals: list[Signal]):
-#     def fetch_weather_data():
-#         weather_fetcher = WeatherDataFetcher()
-#         if ui.real_time_combo.currentIndex() == 0:
-#             graph = graph1
-#         elif ui.real_time_combo.currentIndex() == 1:
-#             graph = graph2
-#         elif ui.real_time_combo.currentIndex() == 2:
-#             graph = graph3
-#         graph.plot_real_time()
-#
-#         def update_points_from_api(wind_speed, time):
-#             print(wind_speed, time)
-#             graph.update_real_time(wind_speed)
-#
-#         weather_fetcher.weather_data_fetched.connect(update_points_from_api)
-#         weather_fetcher.start()
-#         ui.weather_fetchers.append(weather_fetcher)
-#
-#     ui.real_time_btn.clicked.connect(fetch_weather_data)

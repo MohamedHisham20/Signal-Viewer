@@ -1,3 +1,4 @@
+import copy
 import sys
 import numpy as np
 import pyqtgraph as pg
@@ -5,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import QTimer, QElapsedTimer, Qt
 from Signal import Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout
-from Glue import glue_signals
+# from Glue import glue_signals
 
 class CustomViewBox(pg.ViewBox):
     def __init__(self, *args, **kwargs):
@@ -52,10 +53,10 @@ class CustomViewBox(pg.ViewBox):
         else:
             super().mouseMoveEvent(event)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event, *args, **kwargs):
         self.is_user_panning = True
         self.elapsed_timer.start()
-        super().wheelEvent(event)
+        super().wheelEvent(event, *args, **kwargs)
 
     def keyPressEvent(self, event):
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
@@ -80,11 +81,11 @@ class CustomViewBox(pg.ViewBox):
             xMin=min_x,
             xMax=max_x,
             maxXRange=max_x - min_x,
-            minXRange=(max_x - min_x) / 10,
+            minXRange=(max_x - min_x) / 100,
             yMin=min_y,
             yMax=max_y,
             maxYRange=max_y - min_y,
-            minYRange=(max_y - min_y) / 10
+            minYRange=(max_y - min_y) / 100
         )
 
 class Plot:
@@ -106,7 +107,7 @@ class Graph(QWidget):
         self.plot_widget = pg.PlotWidget(viewBox=self.custom_viewbox)
         self.plot_widget.setBackground('#2b2b2b')
         self.plot_widget.showGrid(x=True, y=True)
-        
+        self.linked = False
         layout = QVBoxLayout()
         layout.addWidget(self.plot_widget)
         self.setLayout(layout)
@@ -120,58 +121,26 @@ class Graph(QWidget):
         self.plot_widget.setXRange(0, 10, padding=0)
         self.plot_widget.setYRange(-1, 1, padding=0)
         self.timer = QTimer()
-        self.interploation_timer = QTimer()
+        self.timer.setInterval(40)
+        self.timer.timeout.connect(self.update)
         self.interploation_cool_down = False
         self.counter = 0
-        def cool_down():
-            # if self.counter == 1:
-            #     self.interploation_cool_down = False
-            #     self.interploation_timer.stop()
-            #     self.counter = 0
-            # self.interploation_cool_down = True
-            # # self.interploation_timer.stop()
-            # self.counter +=1
-            self.interploation_cool_down = False
-            self.interploation_timer.stop()
-        self.interploation_timer.timeout.connect(cool_down)
+        self.slider = 0
+        self.speed = 1
 
-
-    def udate_interpolation(self):
-        if self.interploation_cool_down:
-            return
-        for plot in self.plots:
-            if plot.dynamic_interpolation:
-                glued_signal = glue_signals(plot.plot1_interpolation.signal,plot.plot2_interpolation.signal)
-                plot.signal = glued_signal
-                maxX = max(plot.plot1_interpolation.signal.data_pnts[plot.plot1_interpolation.last_point][0], plot.plot2_interpolation.signal.data_pnts[plot.plot2_interpolation.last_point][0])
-                def find_last_index(glued_signal, maxX):
-                    epsilon = 1e-9 
-                    low, high = 0, len(glued_signal.data_pnts) - 1
-                    while low < high:
-                        mid = (low + high) // 2
-                        if glued_signal.data_pnts[mid][0] < maxX - epsilon:
-                            low = mid + 1
-                        else:
-                            high = mid
-                    if low < len(glued_signal.data_pnts) and glued_signal.data_pnts[low][0] > maxX + epsilon:
-                        low -= 1  
-                    return low
-                last_index = find_last_index(glued_signal, maxX)
-                plot.plot.setData([point[0] for point in glued_signal.data_pnts[:]], 
-                              [point[1] for point in glued_signal.data_pnts[:]])
-
-        self.interploation_cool_down = True
-        self.interploation_timer.start(1000)
 
     def change_speed(self,speed:int):
-        self.timer.start(speed)
+        self.speed = speed
     
-    def play_pause(self, plot: Plot = None , play:bool = True):
+    def play_pause(self, plot: Plot = None ):
+        if self.plots == [] :
+            return
         if plot is None:
             for plot in self.plots:
-                plot.isRunning = play
-        else:
-            plot.isRunning = play
+                plot.isRunning = not plot.isRunning
+                if plot.last_point >= len(plot.signal.data_pnts) -1:
+                    plot.isRunning = False
+
 
 
     def delete_signal(self,signal:Signal):
@@ -181,10 +150,12 @@ class Graph(QWidget):
                 self.plot_widget.removeItem(plot.plot)
                 self.plot_widget.removeItem(plot.label)
                 self.plots.remove(plot)
-                # plot.__delattr__("plot")
+                del plot
                 if len(self.plots) == 0:
                     self.timer.stop()
                 break
+        if self.plots == []:
+            self.plot_to_track = None
     def crop_signal(self):
         if self.custom_viewbox.selectfirstX is None or self.custom_viewbox.selectseoncdX is None:
             return
@@ -207,9 +178,9 @@ class Graph(QWidget):
             self.custom_viewbox.selectseoncdX = None
             return cropped_signal
         return None
-    def plot_signal(self, signal: Signal,last_point:float = 0 , shift : int= 0) -> Plot:
-        # if signal already plotted
-        last_point = int(len(signal.data_pnts) * last_point)
+    def plot_signal(self, signal: Signal,last_point:int = 0 , shift : int= 0) -> Plot:
+
+        signal =copy.deepcopy(signal)
         # print(last_point)
         # add the shift to the x values
         signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
@@ -227,10 +198,10 @@ class Graph(QWidget):
         self.plot_widget.addItem(plot.plot)
         if len(self.plots) == 0:
             self.plot_to_track = plot
-            self.change_pan_window(plot,0.1)
-            self.timer.timeout.connect(self.update)
-            self.timer.start(50)
+            self.change_pan_window(plot,0.3)
+            self.timer.start()
         self.plots.append(plot)
+        self.plot_to_track = plot
         return plot
     
     def sihftX(self,shift:float):
@@ -249,17 +220,26 @@ class Graph(QWidget):
         all_y_values = []
 
         for plot in self.plots:
+            margin = 0
+            if plot.isRealTime:
+                margin = 0
+
             x_values = [point[0] for point in plot.signal.data_pnts[:plot.last_point]]
-            y_values = [point[1] for point in plot.signal.data_pnts[:plot.last_point]]
+            y_values = [point[1] + margin for point in plot.signal.data_pnts[:plot.last_point]]
             all_x_values.extend(x_values)
             all_y_values.extend(y_values)
 
-        min_x = int(min(all_x_values) if all_x_values else 0)
-        max_x = int(max(all_x_values) if all_x_values else 10)
-        min_y = int(min(all_y_values) if all_y_values else -1)
-        max_y = int(max(all_y_values) if all_y_values else 1)
+        min_x = (min(all_x_values) if all_x_values else 0)
+        max_x = (max(all_x_values) if all_x_values else 10)
+        min_y = (min(all_y_values) if all_y_values else -1)
+        max_y = (max(all_y_values) if all_y_values else 1)
 
         return min_x, max_x, min_y, max_y
+    @staticmethod
+    def get_range(signal:Signal):
+        range = -signal.data_pnts[0][0] + signal.data_pnts[-1][0]
+        return range
+
 
     def longest_signal(self) -> Plot:
         longest = self.plots[0]
@@ -272,10 +252,14 @@ class Graph(QWidget):
         if Plot is None:
             for plot in self.plots:
                 plot.last_point = 0
+                Graph.remove_shift(plot.signal)
                 plot.isRunning = True
         else:
             Plot.last_point = 0
+            Graph.remove_shift(Plot.signal)
             Plot.isRunning = True
+        self.plot_widget.setXRange(0, 10, padding=0)
+        self.plot_widget.setYRange(-1, 1, padding=0)
 
     def fast_forward(self):
         longest = self.longest_signal()
@@ -283,8 +267,9 @@ class Graph(QWidget):
             plot.last_point = len(longest.signal.data_pnts) - 1
             plot.isRunning = False
             
-    def change_pan_window(self,Plot:Plot ,ratio:float = 0.1):
-        self.panWidth = int(len(Plot.signal.data_pnts) * ratio)
+    def change_pan_window(self,Plot:Plot ,ratio:float = 0.3):
+
+        self.panWidth = Graph.get_range(Plot.signal) *ratio
         self.plot_to_track = Plot
 
     def change_bg_color(self,color:str):
@@ -302,12 +287,15 @@ class Graph(QWidget):
             if plot.last_point >= len(plot.signal.data_pnts) - 1 and not plot.isRealTime:
                 plot.isRunning = False
             if plot.isRunning:
-                plot.last_point += 1
+                plot.last_point += self.speed
+                #print the timer interval 
+                print(self.timer.interval())
+                plot.last_point = min(plot.last_point , len(plot.signal.data_pnts) - 1)
                 plot.signal.last_point = plot.last_point
                 if plot.isRealTime:
                     last_x = plot.signal.data_pnts[-1][0]
                     last_y = plot.signal.data_pnts[-1][1]
-                    plot.signal.data_pnts.append((last_x + 1, last_y))
+                    plot.signal.data_pnts.append((last_x +1, last_y))
             # if signal empty continue
             if len(plot.signal.data_pnts) == 0:
                 continue
@@ -323,81 +311,49 @@ class Graph(QWidget):
             self.timer.stop()
             return
         min_x, max_x, min_y, max_y = self.Calculate_min_max()
-        margin_x = (max_x - min_x) * 0.01
-        margin_y = (max_y - min_y) * 0.5
-        # min_x -= margin_x
-        # max_x += margin_x
-        min_y -= margin_y
-        max_y += margin_y
         self.custom_viewbox.signal_max_x = max_x
         self.custom_viewbox.signal_min_x = min_x
         self.custom_viewbox.signal_max_y = max_y
         self.custom_viewbox.signal_min_y = min_y
+        margin_y = abs(max_y - min_y) * 0.4
+        min_y -= margin_y
+        max_y += margin_y
+        start = max(max_x - self.panWidth, min_x)
+        end = start + self.panWidth
+        margin = max(self.panWidth - max_x,0)
+        
         self.custom_viewbox.set_dynamic_limits(
             min_x,
-            max_x,
+            end +margin,
             min_y,
             max_y
         )
-
+        self.farthest_plot()
         longest = self.plot_to_track
         # print("label",longest.signal.label)
         # print("last point",longest.last_point,"len",len(longest.signal.data_pnts))
         if self.custom_viewbox.elapsed_timer.elapsed() > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
             self.custom_viewbox.is_user_panning = False
 
+    
         if not self.custom_viewbox.is_user_panning and longest.isRunning:
-            end = longest.signal.data_pnts[longest.last_point][0]
-            start = end - self.panWidth
+            print("start ",start)
+            print("end ",end)
             self.plot_widget.setXRange(start, end, padding=0)
-            self.plot_widget.setYRange(min_y, max_y, padding=0)
-
-    def update_old(self):
-        for plot in self.plots:
-            if plot.last_point >= len(plot.signal.data_pnts) - 1:
-                plot.isRunning = False
-            if plot.isRunning:
-                plot.last_point += 1
-                plot.signal.last_point = plot.last_point
-            plot.plot.setData([point[0] for point in plot.signal.data_pnts[:plot.last_point]], 
-                              [point[1] for point in plot.signal.data_pnts[:plot.last_point]])
-            # Update label position
-            plot.label.setPos(plot.signal.data_pnts[plot.last_point - 1][0], plot.signal.data_pnts[plot.last_point - 1][1])
-
-        min_x, max_x, min_y, max_y = self.Calculate_min_max()
-        margin_x = (max_x - min_x) * 0.01
-        margin_y = (max_y - min_y) * 0.1
-        # min_x -= margin_x
-        max_x += margin_x
-        min_y -= margin_y
-        max_y += margin_y
-        self.custom_viewbox.signal_max_x = max_x
-        self.custom_viewbox.signal_min_x = min_x
-        self.custom_viewbox.signal_max_y = max_y
-        self.custom_viewbox.signal_min_y = min_y
-        self.custom_viewbox.set_dynamic_limits(
-            min_x,
-            max_x,
-            min_y,
-            max_y
-        )
-
-        longest = self.plot_to_track
-        if self.custom_viewbox.elapsed_timer.elapsed() > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
-            self.custom_viewbox.is_user_panning = False
-
-        if not self.custom_viewbox.is_user_panning and longest.isRunning:
-            self.plot_widget.setXRange(longest.last_point - self.shift_slide * longest.last_point, self.panWidth + longest.last_point - self.shift_slide * longest.last_point, padding=0)
-            self.plot_widget.setYRange(min_y, max_y, padding=0)
+            if not self.linked:
+                self.plot_widget.setYRange(min_y, max_y, padding=0)
+            # self.plot_widget.setYRange(min_y, max_y, padding=0)
+  
     def get_last_point(self):
         if self.plot_to_track:
+
+            # print(self.plot_to_track.last_point)
             return self.plot_to_track.last_point
         return 0
 
 
-    def plot_real_time(self,shift:int = 0.0 ,label:str="Wind Speed") -> Plot:
-        signal = Signal(label=label, data_pnts=[(0, 0), (1, 1)], color='#FF0000')
-        last_point = int(1+shift)
+    def plot_real_time(self,last_point = 0,shift:int = 0 ,label:str="Wind Speed") -> Plot:
+        signal = Signal(label=label, data_pnts=[(0, 6.5), (1, 6.5)], color='#FF0000')
         # add the shift to the x values
         signal.data_pnts = [(x + shift, y) for x, y in signal.data_pnts]
         for plot in self.plots:
@@ -417,9 +373,11 @@ class Graph(QWidget):
         # print("here")
         if len(self.plots) == 1:
             self.plot_to_track = plot
-            self.change_pan_window(plot,0.1)
+            self.change_pan_window(plot,0.3)
             self.timer.timeout.connect(self.update)
-            self.timer.start(50)
+            self.timer.start(40)
+        self.plot_to_track = plot
+        
         return plot
     
 
@@ -429,3 +387,41 @@ class Graph(QWidget):
             if plot.isRunning and plot.isRealTime:
                 last_x = plot.signal.data_pnts[-1][0]
                 plot.signal.data_pnts.append((last_x+1, value))
+
+    @staticmethod
+    def remove_shift(signal:Signal):
+        shift = signal.data_pnts[0][0]
+        signal.data_pnts = [(x - shift, y) for x, y in signal.data_pnts]
+
+    def farthest_plot(self):
+        max_plot = self.plot_to_track
+        maxX = max_plot.signal.data_pnts[max_plot.last_point][0]
+        for plot in self.plots:
+            X =  plot.signal.data_pnts[plot.last_point][0]
+            if X > maxX:
+                max_plot = plot
+                maxX = X
+        self.plot_to_track = max_plot
+            
+    def slide(self,ratio:float):
+        min_x, max_x, min_y, max_y = self.Calculate_min_max()
+        range = max_x - min_x
+        slide = max_x - ratio * range
+        self.slider = slide
+    
+    def x_zoom(self,ratio:float):
+        if self.plot_to_track is None:
+            return
+        self.custom_viewbox.is_user_panning = True
+        self.custom_viewbox.elapsed_timer.start()
+
+        min_x, max_x, min_y, max_y = self.Calculate_min_max()
+        range = max_x - min_x
+        self.panWidth = range * ratio
+        self.farthest_plot()
+        longest = self.plot_to_track
+        end = max(longest.signal.data_pnts[longest.last_point][0] - self.slider,self.panWidth + min_x)
+        start = max(end - self.panWidth - self.slider , min_x)
+        self.plot_widget.setXRange(start, end, padding=0)
+        self.plot_widget.setYRange(min_y, max_y, padding=0)
+        

@@ -303,6 +303,6 @@ class ReportWindow(QDialog):
             print(f"Report saved to {file_name}")
 
 
-def open_report_window():
-    graph_window = GraphWindow(Signal.get_all_signals(True))
+def open_report_window(signals):
+    graph_window = GraphWindow(signals)
     graph_window.show()

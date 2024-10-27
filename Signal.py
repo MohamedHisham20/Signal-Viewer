@@ -2,6 +2,7 @@ import numpy as np
 import csv
 import os
 from PySide6.QtCore import QPointF
+from PySide6.QtWidgets import QFileDialog
 
 class Signal:
     signal_counter = 0
@@ -15,6 +16,7 @@ class Signal:
         self.data_pnts = []
         self.shift = 0
         self.last_point = 0
+        Signal.signals = []
         if color is None:
             self.color = "#{:06x}".format(np.random.randint(0, 0xFFFFFF))
         else:
@@ -77,14 +79,18 @@ class Signal:
                     data_pnts = [(i, float(row[0])) for i, row in enumerate(reader)]
                 else:
                     data_pnts = [(i, float(row[1])) for i, row in enumerate(reader)]
-                    # for row in reader:
-                    #     x, y = float(row[0]), float(row[1])
-                    #     data_pnts.append((x, y))
 
         except Exception as e:
             return None
-        return Signal(data_pnts, is_normalized=is_normalized)
+        return Signal(data_pnts, is_normalized=is_normalized, label=file_path.split('/')[-1].split('.')[0], color="#{:06x}".format(np.random.randint(0, 0xFFFFFF)))
 
+    @staticmethod
+    def from_file_dialog(is_normalized=False):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(None, "Open CSV File", "", "CSV Files (*.csv)")
+        if file_path:
+            return Signal.from_file(file_path, is_normalized)
+        return None
     @staticmethod
     def from_NP_array(np_array, label=None, is_normalized=False):
         data_pnts = [(row[0], row[1]) for row in np_array]
@@ -92,7 +98,6 @@ class Signal:
 
     @staticmethod
     def from_pd_df(df):
-        Signal.glued_signal_counter += 1
         data_pnts = [(row[0], row[1]) for _, row in df.iterrows()]
         label = "Glued_Signal_" + str(Signal.glued_signal_counter)
         return Signal(data_pnts, label)

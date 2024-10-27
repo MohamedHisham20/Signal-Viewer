@@ -214,7 +214,7 @@ class NonRectGraph(QFrame):
         self.scroll_speed.setMaximum(30)
         self.scroll_speed.setValue(1)
         self.scroll_speed.sliderMoved.connect(self.change_speed)
-
+        self.isRunning = False
         layout = QVBoxLayout()
         layout.addWidget(self.radar_widget)
 
@@ -232,9 +232,11 @@ class NonRectGraph(QFrame):
 
     def play_radar(self):
         self.radar_widget.timer.start(50)
+        self.isRunning = True
 
     def pause_radar(self):
         self.radar_widget.timer.stop()
+        self.isRunning = False
 
     def rewind_radar(self):
         self.radar_widget.start_over()
@@ -251,6 +253,7 @@ class NonRectGraph(QFrame):
             self.radar_widget.load_data_from_csv(file_path)
 
     def signal_to_nonRect(self, signal):
+        self.clear()
         y_values = signal.get_y_values()
         self.radar_widget.load_y_axis(y_values, signal.label)
     def clear(self):
