@@ -109,6 +109,7 @@ class Graph(QWidget):
         self.plot_widget.showGrid(x=True, y=True)
         self.linked = False
         layout = QVBoxLayout()
+        self.time_offset = 0
         layout.addWidget(self.plot_widget)
         self.setLayout(layout)
         self.plot_to_track = None
@@ -140,6 +141,7 @@ class Graph(QWidget):
                 plot.isRunning = not plot.isRunning
                 if plot.last_point >= len(plot.signal.data_pnts) -1:
                     plot.isRunning = False
+        self.custom_viewbox.is_user_panning = False
 
 
 
@@ -258,6 +260,7 @@ class Graph(QWidget):
             Plot.last_point = 0
             Graph.remove_shift(Plot.signal)
             Plot.isRunning = True
+        self.custom_viewbox.is_user_panning = False
         self.plot_widget.setXRange(0, 10, padding=0)
         self.plot_widget.setYRange(-1, 1, padding=0)
 
@@ -332,17 +335,16 @@ class Graph(QWidget):
         longest = self.plot_to_track
         # print("label",longest.signal.label)
         # print("last point",longest.last_point,"len",len(longest.signal.data_pnts))
-        if self.custom_viewbox.elapsed_timer.elapsed() > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
+        if self.custom_viewbox.elapsed_timer.elapsed() + self.time_offset > 2000 and longest.signal.data_pnts[longest.last_point][0] >= self.plot_widget.viewRange()[0][1]:
+            self.time_offset = 0
             self.custom_viewbox.is_user_panning = False
 
-    
+        # print("is linked", self.linked , "is user panning",self.custom_viewbox.is_user_panning)
         if not self.custom_viewbox.is_user_panning and longest.isRunning:
-            print("start ",start)
-            print("end ",end)
             self.plot_widget.setXRange(start, end, padding=0)
-            if not self.linked:
-                self.plot_widget.setYRange(min_y, max_y, padding=0)
-            # self.plot_widget.setYRange(min_y, max_y, padding=0)
+            # if not self.linked:
+                # self.plot_widget.setYRange(min_y, max_y, padding=0)
+            self.plot_widget.setYRange(min_y, max_y, padding=0)
   
     def get_last_point(self):
         if self.plot_to_track:

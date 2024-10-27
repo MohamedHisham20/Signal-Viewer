@@ -81,7 +81,7 @@ def NonRect_connections(graph: NonRectGraph, ui: Ui_MainWindow, signals: list[Si
     siganls_combo.addItems([signal.label for signal in signals])
 
     def plot_signal():
-        signal = copy.deepcopy(signals[siganls_combo.currentIndex() -1])
+        signal = copy.deepcopy(signals[siganls_combo.currentIndex()])
         graph.signal_to_nonRect(signal)
         toggle_play_pause()
 
@@ -279,37 +279,31 @@ def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
             return
         graph1.linked = True
         graph2.linked = True
-        def link_view(source_viewbox, target_viewbox):
-            if not graph1.custom_viewbox.is_user_panning and not graph2.custom_viewbox.is_user_panning:
+        def link_view(source_viewbox, target_viewbox,source:Graph,target:Graph):
+            if target.custom_viewbox.is_user_panning:
                 return
-            if graph1.custom_viewbox.is_user_panning:
-                graph2.custom_viewbox.is_user_panning = True
-                graph2.custom_viewbox.elapsed_timer.start()
-            else:
-                graph2.custom_viewbox.is_user_panning = False
-                
-            if graph2.custom_viewbox.is_user_panning:
-                graph1.custom_viewbox.is_user_panning = True
-                graph1.custom_viewbox.elapsed_timer.start()
-            else:
+            if not source.custom_viewbox.is_user_panning:
+                return
+            
+            if graph1.plot_to_track and graph1.plot_to_track.isRunning:
+                graph1.play_pause()
                 graph1.custom_viewbox.is_user_panning = False
-
+            if graph2.plot_to_track and graph2.plot_to_track.isRunning:
+                graph2.play_pause()
+                graph2.custom_viewbox.is_user_panning = False
+            ui.play_all_btn.setText("Play")
             if not graph1.linked:
                 return
             if not graph2.linked:
                 return
             
-            # target_viewbox.setLimits(
-            #     yMin=min(source_viewbox.viewRange()[1][0], target_viewbox.viewRange()[1][0]),
-            #     yMax=max(source_viewbox.viewRange()[1][1], target_viewbox.viewRange()[1][1])
-            # )
             target_viewbox.setXRange(*source_viewbox.viewRange()[0], padding=0)
             target_viewbox.setYRange(*source_viewbox.viewRange()[1], padding=0)
 
-        graph1.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox()))
-        graph2.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox()))
-        graph1.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox()))
-        graph2.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox()))
+        graph1.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox(),graph1,graph2))
+        graph2.plot_widget.getViewBox().sigXRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox(),graph2,graph1))
+        graph1.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph1.plot_widget.getViewBox(), graph2.plot_widget.getViewBox(),graph1,graph2))
+        graph2.plot_widget.getViewBox().sigYRangeChanged.connect(lambda: link_view(graph2.plot_widget.getViewBox(), graph1.plot_widget.getViewBox(),graph2,graph1))
 
     def import_csv():
         signal = Signal.from_file_dialog(True)
