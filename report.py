@@ -10,12 +10,15 @@ from reportlab.pdfgen import canvas
 from pyqtgraph.exporters import ImageExporter
 
 from Graph import Graph
+from styleSheet import styleSheet
 from Signal import Signal
 
 
 class GraphWindow(QWidget):
     def __init__(self, signals=None):
         super().__init__()
+        styleSheet(self)
+
         self.setWindowTitle("Graph Cropping Example")
         self.setGeometry(50, 30, 1080, 780)
 
@@ -176,7 +179,7 @@ class ReportWindow(QDialog):
     def __init__(self, all_cropped_data):
         super().__init__()
         self.setWindowTitle("Generate Report")
-
+        styleSheet(self)
         # Limit window size to a quarter of the screen
         self.setGeometry(100, 100, 800, 600)  # Increase size for better display
 
@@ -204,8 +207,8 @@ class ReportWindow(QDialog):
         self.graph_widgets = []
         for cropped_data in self.all_cropped_data:
             graph_widget = pg.PlotWidget(self)
-            graph_widget.plot(cropped_data, pen='black')
-            graph_widget.setBackground('w')
+            graph_widget.plot(cropped_data, pen='r')
+            graph_widget.setBackground('#2b2b2b')
             graph_widget.setFixedHeight(250)  # Adjusted height for a better display
             graph_widget.setFixedWidth(400)  # Wider graphs for horizontal layout
             self.graph_widgets.append(graph_widget)
