@@ -280,6 +280,10 @@ def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
         graph1.linked = True
         graph2.linked = True
         def link_view(source_viewbox, target_viewbox,source:Graph,target:Graph):
+            if not graph1.linked:
+                return
+            if not graph2.linked:
+                return
             if target.custom_viewbox.is_user_panning:
                 return
             if not source.custom_viewbox.is_user_panning:
@@ -292,10 +296,7 @@ def all_Channels_connections(graph1: Graph, graph2: Graph, graph3: Graph, ui: Ui
                 graph2.play_pause()
                 graph2.custom_viewbox.is_user_panning = False
             ui.play_all_btn.setText("Play")
-            if not graph1.linked:
-                return
-            if not graph2.linked:
-                return
+            
             
             target_viewbox.setXRange(*source_viewbox.viewRange()[0], padding=0)
             target_viewbox.setYRange(*source_viewbox.viewRange()[1], padding=0)
