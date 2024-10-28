@@ -222,98 +222,98 @@ class ReportWindow(QDialog):
         self.setLayout(layout)
 
 
-def save_report(self):
-    """Save the report as a PDF file with graphs."""
-    report_text = self.report_text.toPlainText()
+    def save_report(self):
+        """Save the report as a PDF file with graphs."""
+        report_text = self.report_text.toPlainText()
 
-    if not report_text:
-        print("No report text to save.")
-        return
+        if not report_text:
+            print("No report text to save.")
+            return
 
-    # File dialog to select where to save the PDF
-    file_name, _ = QFileDialog.getSaveFileName(self, "Save Report", "", "PDF Files (*.pdf)")
+        # File dialog to select where to save the PDF
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save Report", "", "PDF Files (*.pdf)")
 
-    if file_name:
-        # Create a PDF canvas
-        c = canvas.Canvas(file_name, pagesize=letter)
-        width, height = letter
+        if file_name:
+            # Create a PDF canvas
+            c = canvas.Canvas(file_name, pagesize=letter)
+            width, height = letter
 
-        # Add a logo (make sure to replace 'logo.png' with your actual logo file)
-        logo_path = os.path.join(os.path.dirname(__file__), 'Controllers', 'logo.png')
-        if os.path.exists(logo_path):
-            c.drawImage(logo_path, 30, height - 60, width=100, height=50)  # Adjust size/position of logo
+            # Add a logo (make sure to replace 'logo.png' with your actual logo file)
+            logo_path = os.path.join(os.path.dirname(__file__), 'Controllers', 'logo.png')
+            if os.path.exists(logo_path):
+                c.drawImage(logo_path, 35, height - 80, width=140, height=100)  # Adjust size/position of logo
 
-        # Add a header
-        c.setFont("Helvetica-Bold", 14)
-        c.drawCentredString(width / 2, height - 50, "User Report")
+            # Add a header
+            c.setFont("Helvetica-Bold", 14)
+            c.drawCentredString(width / 2, height - 50, "User Report")
 
-        # Draw a line below the header
-        c.line(30, height - 60, width - 30, height - 60)
+            # Draw a line below the header
+            c.line(30, height - 60, width - 30, height - 60)
 
-        # Write the report text on the PDF with a border around it
-        c.setFont("Helvetica", 12)
-        c.drawCentredString(width / 2, height - 90, "Report Content:")
-        text_lines = report_text.split('\n')
-        y_pos = height - 120
+            # Write the report text on the PDF with a border around it
+            c.setFont("Helvetica", 12)
+            c.drawCentredString(width / 2, height - 90, "Report Content:")
+            text_lines = report_text.split('\n')
+            y_pos = height - 120
 
-        # Add text content with a subtle border
-        c.rect(80, y_pos + 20, width - 160, -(len(text_lines) * 15 + 20))  # Border for the text area
-        for line in text_lines:
-            c.drawCentredString(width / 2, y_pos, line)
-            y_pos -= 15
+            # Add text content with a subtle border
+            c.rect(80, y_pos + 20, width - 160, -(len(text_lines) * 15 + 20))  # Border for the text area
+            for line in text_lines:
+                c.drawCentredString(width / 2, y_pos, line)
+                y_pos -= 15
 
-        y_pos -= 30
-        c.drawCentredString(width / 2, y_pos, "Graphs of the cropped data:")
-        y_pos -= 40
+            y_pos -= 30
+            c.drawCentredString(width / 2, y_pos, "Graphs of the cropped data:")
+            y_pos -= 40
 
-        # Save each graph as an image and add it to the PDF
-        for idx, graph_widget in enumerate(self.graph_widgets):
-            # Get the data from the plotted curve
-            curve = graph_widget.plotItem.curves[0]  # Assuming each widget has one curve
-            data = curve.getData()[1]  # Get the y-values (data)
+            # Save each graph as an image and add it to the PDF
+            for idx, graph_widget in enumerate(self.graph_widgets):
+                # Get the data from the plotted curve
+                curve = graph_widget.plotItem.curves[0]  # Assuming each widget has one curve
+                data = curve.getData()[1]  # Get the y-values (data)
 
-            # Calculate the mean, std, maximum point, and minimum point of the graph
-            mean = np.mean(data)
-            std = np.std(data)
-            max_point = np.max(data)
-            min_point = np.min(data)
+                # Calculate the mean, std, maximum point, and minimum point of the graph
+                mean = np.mean(data)
+                std = np.std(data)
+                max_point = np.max(data)
+                min_point = np.min(data)
 
-            # Save each graph as a PNG image
-            exporter = ImageExporter(graph_widget.plotItem)
-            image_path = f"graph_{idx}.png"
-            exporter.export(image_path)
+                # Save each graph as a PNG image
+                exporter = ImageExporter(graph_widget.plotItem)
+                image_path = f"graph_{idx}.png"
+                exporter.export(image_path)
 
-            # Calculate the center position for the image
-            image_width = 300
-            image_height = 150
-            image_x = (width - image_width) / 2
+                # Calculate the center position for the image
+                image_width = 300
+                image_height = 150
+                image_x = (width - image_width) / 2
 
-            # Load the image and draw it on the PDF
-            c.drawImage(image_path, image_x, y_pos - image_height, width=image_width, height=image_height)
-            os.remove(image_path)  # Remove the image file after drawing it
+                # Load the image and draw it on the PDF
+                c.drawImage(image_path, image_x, y_pos - image_height, width=image_width, height=image_height)
+                os.remove(image_path)  # Remove the image file after drawing it
 
-            # Add label and statistics for the graph, with a border
-            rect_width = 320
-            rect_height = 30
-            rect_x = (width - rect_width) / 2
-            c.rect(rect_x, y_pos - image_height - rect_height, rect_width,
-                   rect_height)  # Draw a border around the label
-            c.drawCentredString(width / 2, y_pos - image_height - 20, f"Graph {idx + 1}")
-            c.drawCentredString(width / 2, y_pos - image_height - 50,
-                                f"Mean: {mean:.2f}, Std: {std:.2f}, Max: {max_point:.2f}, Min: {min_point:.2f}")
-            y_pos -= (image_height + 70)  # Move down to leave space for the next image
+                # Add label and statistics for the graph, with a border
+                rect_width = 320
+                rect_height = 30
+                rect_x = (width - rect_width) / 2
+                c.rect(rect_x, y_pos - image_height - rect_height, rect_width,
+                       rect_height)  # Draw a border around the label
+                c.drawCentredString(width / 2, y_pos - image_height - 20, f"Graph {idx + 1}")
+                c.drawCentredString(width / 2, y_pos - image_height - 50,
+                                    f"Mean: {mean:.2f}, Std: {std:.2f}, Max: {max_point:.2f}, Min: {min_point:.2f}")
+                y_pos -= (image_height + 70)  # Move down to leave space for the next image
 
-            if y_pos < 150:
-                c.showPage()  # Create a new page if needed
-                y_pos = height - 60  # Reset y position
+                if y_pos < 150:
+                    c.showPage()  # Create a new page if needed
+                    y_pos = height - 60  # Reset y position
 
-        # Add a footer with page numbers
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(width - 100, 50, "Page 1")  # Adjust as needed for multiple pages
+            # Add a footer with page numbers
+            c.setFont("Helvetica", 10)
+            c.drawCentredString(width - 100, 50, "Page 1")  # Adjust as needed for multiple pages
 
-        # Save the PDF
-        c.save()
-        print(f"Report saved to {file_name}")
+            # Save the PDF
+            c.save()
+            print(f"Report saved to {file_name}")
 
 
 def open_report_window(signals):
