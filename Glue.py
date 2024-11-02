@@ -96,7 +96,7 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
     interp2 = interp1d(signal2_df['x'], signal2_df['y'], kind=interpolation_degree, fill_value="extrapolate")
 
     # Generate gap points
-    number_of_points = max(10, int((gap_end - gap_start) * 10))  # Adjust number of points
+    number_of_points = max(10, int((gap_end - gap_start) ))  # Adjust number of points
     gap_x = np.linspace(gap_start, gap_end, number_of_points)
     if interpolation_degree in ['linear', 'nearest']:
         gap_x = gap_x[(gap_x >= signal1_df['x'].min()) & (gap_x <= signal1_df['x'].max()) & (gap_x >= signal2_df['x'].min()) & (gap_x <= signal2_df['x'].max())]

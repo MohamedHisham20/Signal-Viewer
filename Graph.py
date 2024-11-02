@@ -139,8 +139,9 @@ class Graph(QWidget):
         if self.plots == [] :
             return
         if plot is None:
+            state = self.plots[0].isRunning
             for plot in self.plots:
-                plot.isRunning = not plot.isRunning
+                plot.isRunning = not state
                 if plot.last_point >= len(plot.signal.data_pnts) -1:
                     plot.isRunning = False
         self.custom_viewbox.is_user_panning = False
