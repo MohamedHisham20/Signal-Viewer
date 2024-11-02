@@ -793,6 +793,8 @@ class DragDropList(QListWidget):
                         signal.label = new_label
                         self.ui.addsignalChannel1_combo.clear()
                         self.ui.addsignalChannel2_combo.clear()
+                        self.ui.addsignalChannel1_combo.addItem('Choose Signal')
+                        self.ui.addsignalChannel2_combo.addItem('Choose Signal')
                         self.ui.addsignalChannel1_combo.addItems([signal.label for signal in self.AllSignals])
                         self.ui.addsignalChannel2_combo.addItems([signal.label for signal in self.AllSignals])
                 break

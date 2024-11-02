@@ -47,6 +47,8 @@ class CustomViewBox(pg.ViewBox):
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
+        self.is_user_panning = True
+        self.elapsed_timer.start()
         if self.roi is not None:
             pos = self.mapToView(event.pos())
             self.roi.setSize([pos.x() - self.roi.pos()[0], pos.y() - self.roi.pos()[1]])

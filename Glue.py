@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QComboBox, QLabel
 from PySide6.QtCore import QTimer
 from scipy.interpolate import interp1d
-def glue_signals(signal1: Signal, signal2: Signal, interpolation_degree=1):
+def glue_signals(signal1: Signal, signal2: Signal, interpolation_degree='linear'):
     signal1_df = pd.DataFrame(signal1.data_pnts, columns=['x', 'y'])
     signal2_df = pd.DataFrame(signal2.data_pnts, columns=['x', 'y'])
 
@@ -75,8 +75,11 @@ def combine_overlap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame):
     return Signal.from_pd_df(result)
 
 
-def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolation_degree):
+import pandas as pd
+import numpy as np
+from scipy.interpolate import interp1d
 
+def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolation_degree):
     # Ensure signal1_df's maximum x is less than signal2_df's minimum x
     if signal1_df['x'].max() > signal2_df['x'].min():
         return combine_gap(signal2_df, signal1_df, interpolation_degree)
@@ -93,11 +96,33 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
     interp2 = interp1d(signal2_df['x'], signal2_df['y'], kind=interpolation_degree, fill_value="extrapolate")
 
     # Generate gap points
-    number_of_points = max(10, int((gap_end - gap_start) * 10))
+    number_of_points = max(10, int((gap_end - gap_start) * 10))  # Adjust number of points
     gap_x = np.linspace(gap_start, gap_end, number_of_points)
+    if interpolation_degree in ['linear', 'nearest']:
+        gap_x = gap_x[(gap_x >= signal1_df['x'].min()) & (gap_x <= signal1_df['x'].max()) & (gap_x >= signal2_df['x'].min()) & (gap_x <= signal2_df['x'].max())]
+
+    # Interpolating values
     gap_y1 = interp1(gap_x)
     gap_y2 = interp2(gap_x)
-    gap_y = (gap_y1 + gap_y2) / 2  # Averaging the interpolated values
+
+    # Determine how to handle gap_y based on the interpolation degree
+    if interpolation_degree in ['linear', 'nearest']:
+        # For linear or nearest, use average of the interpolated values as-is
+        gap_y = (gap_y1 + gap_y2) / 2
+    else:
+        # For other interpolation types, average and then normalize
+        gap_y = (gap_y1 + gap_y2) / 2
+        
+        # Normalize gap_y to be between the min and max of the two signals
+        combined_min = min(signal1_df['y'].min(), signal2_df['y'].min())
+        combined_max = max(signal1_df['y'].max(), signal2_df['y'].max())
+
+        # Normalize gap_y to [0, 1]
+        gap_y_normalized = (gap_y - gap_y.min()) / (gap_y.max() - gap_y.min())
+
+        # Scale normalized values to the combined range [combined_min, combined_max]
+        gap_y = gap_y_normalized * (combined_max - combined_min) + combined_min
+        gap_y = gap_y/2
 
     # Create DataFrame for the gap
     gap_df = pd.DataFrame({'x': gap_x, 'y': gap_y})
@@ -106,6 +131,7 @@ def combine_gap(signal1_df: pd.DataFrame, signal2_df: pd.DataFrame, interpolatio
     result = pd.concat([signal1_df, gap_df, signal2_df]).sort_values(by='x').reset_index(drop=True)
 
     return Signal.from_pd_df(result)
+
 
 class GluePopUp(QWidget):
     def __init__(self, parent=None, signals: list[Signal] = None, ui=None):
@@ -144,7 +170,7 @@ class GluePopUp(QWidget):
         self.combo_signal1.addItems([signal.label for signal in self.signals])
         self.combo_signal2.addItems([signal.label for signal in self.signals])
         # self.combo_interpolation.addItems([str(i) for i in range(1, 6)])  # Adding interpolation degrees 1 to 5
-        self.combo_interpolation.addItems(['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next'])
+        self.combo_interpolation.addItems(['linear', 'nearest', 'slinear', 'quadratic', 'cubic'])
 
         self.combo_signal1.currentIndexChanged.connect(self.update_signal1)
         self.combo_signal2.currentIndexChanged.connect(self.update_signal2)
