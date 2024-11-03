@@ -39,7 +39,7 @@ def add_lists(ui, graph_Channel1, graph_Channel2, graph_C3, signals):
     #add lable 
     ui.operations_label = QtWidgets.QLabel()
     ui.operations_label.setObjectName("label")
-    ui.operations_label.setText("Operations")
+    ui.operations_label.setText("Options")
     ui.verticalLayout_4.addWidget(ui.operations_label)
     ui.verticalLayout_4.addWidget(ui.line)
     ui.verticalLayout_4.addLayout(ui.glue_report_layout)

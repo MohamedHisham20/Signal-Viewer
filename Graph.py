@@ -139,7 +139,7 @@ class Graph(QWidget):
         if self.plots == [] :
             return
         if plot is None:
-            state = self.plots[0].isRunning
+            state = self.plot_to_track.isRunning
             for plot in self.plots:
                 plot.isRunning = not state
                 if plot.last_point >= len(plot.signal.data_pnts) -1:
