@@ -2,6 +2,8 @@
 
 Signal Viewer is a Python application built with PyQt that allows users to visualize and interact with signal data. The tool provides various features to analyze and manipulate signals effectively.
 
+https://github.com/user-attachments/assets/e3a7d36d-8554-4255-a951-92a2870e4fed
+
 ## Features
 
 - **Plotting Signals**: Visualize signals on two separate channels, making it easy to analyze multiple data streams simultaneously.
