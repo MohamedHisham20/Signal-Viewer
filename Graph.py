@@ -295,7 +295,7 @@ class Graph(QWidget):
             if plot.isRunning:
                 plot.last_point += self.speed
                 #print the timer interval 
-                print(self.timer.interval())
+                # print(self.timer.interval())
                 plot.last_point = min(plot.last_point , len(plot.signal.data_pnts) - 1)
                 plot.signal.last_point = plot.last_point
                 if plot.isRealTime:
